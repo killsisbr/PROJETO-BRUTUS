@@ -114,8 +114,14 @@ async function analisarLocalizacao(idAtual, carrinhoAtual, msg, client, MessageM
     }
 
     carrinhoAtual.valorEntrega = valorEntrega;
-    let totalGeral = valorTotal(idAtual);
-    carrinhoAtual.valorTotal = totalGeral;
+    // Calcula total exibido ao cliente. Se a entrega ainda não foi confirmada,
+    // adicionamos manualmente a taxa ao total retornado por valorTotal(idAtual).
+    const totalCalculado = valorTotal(idAtual);
+    let totalExibido = totalCalculado;
+    if (!carrinhoAtual.entrega && typeof carrinhoAtual.valorEntrega === 'number' && carrinhoAtual.valorEntrega > 0) {
+        totalExibido = parseFloat((totalCalculado + carrinhoAtual.valorEntrega).toFixed(2));
+    }
+    carrinhoAtual.valorTotal = totalExibido;
 
     // CORREÇÃO: Removido o '$' extra na template string
     const linkLocalizacao = `https://www.google.com/maps/search/?api=1&query=${carrinhoAtual.lat},${carrinhoAtual.lng}`;
@@ -124,7 +130,7 @@ async function analisarLocalizacao(idAtual, carrinhoAtual, msg, client, MessageM
     msg.reply(
         `${mensagemParaCliente}` +
         `💸 Taxa de entrega: R$ ${carrinhoAtual.valorEntrega.toFixed(2)}\n` +
-        `🛒 *VALOR FINAL*: R$ ${totalGeral.toFixed(2)}\n\n` +
+        `🛒 *VALOR FINAL*: R$ ${totalExibido.toFixed(2)}\n\n` +
         `Digite *S* para confirmar ou envie outro endereço.`
     );
 }
@@ -337,13 +343,17 @@ _Exemplo: Rua das Flores, 123, Centro_
         }
 
         carrinhoAtual.valorEntrega = valorEntrega;
-        let totalGeral = valorTotal(idAtual);
-        carrinhoAtual.valorTotal = totalGeral;
+        const totalCalculado = valorTotal(idAtual);
+        let totalExibido = totalCalculado;
+        if (!carrinhoAtual.entrega && typeof carrinhoAtual.valorEntrega === 'number' && carrinhoAtual.valorEntrega > 0) {
+            totalExibido = parseFloat((totalCalculado + carrinhoAtual.valorEntrega).toFixed(2));
+        }
+        carrinhoAtual.valorTotal = totalExibido;
 
         msg.reply(
             `${mensagemParaCliente}` +
             `💸 Taxa de entrega: R$ ${carrinhoAtual.valorEntrega.toFixed(2)}\n` +
-            `🛒 *VALOR FINAL*: R$ ${totalGeral.toFixed(2)}\n\n` +
+            `🛒 *VALOR FINAL*: R$ ${totalExibido.toFixed(2)}\n\n` +
             `Digite *S* para confirmar ou envie outro endereço.`
         );
     }

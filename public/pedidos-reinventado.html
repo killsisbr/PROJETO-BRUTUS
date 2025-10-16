@@ -974,18 +974,18 @@
           if (data.active) {
             button.classList.add('btn-robot-active');
             button.title = 'Robô Ativado (Clique para desativar)';
-            alert('Robô ativado com sucesso!');
+            console.log('Robô ativado (estado visual). O sistema continuará respondendo.');
           } else {
             button.classList.remove('btn-robot-active');
             button.title = 'Robô Desativado (Clique para ativar)';
-            alert('Robô desativado com sucesso!');
+            console.log('Robô desativado (estado visual). O sistema continuará respondendo.');
           }
         } else {
-          alert('Erro ao alternar o estado do robô: ' + data.error);
+          console.error('Erro ao alternar o estado do robô: ' + data.error);
         }
       } catch (error) {
         console.error('Erro ao alternar o estado do robô:', error);
-        alert('Erro ao alternar o estado do robô');
+  console.error('Erro ao alternar o estado do robô');
       }
     });
     
@@ -1007,7 +1007,7 @@
           }
         }
       } catch (error) {
-        console.error('Erro ao verificar o estado do robô:', error);
+      console.error('Erro ao verificar o estado do robô:', error);
       }
     }
     

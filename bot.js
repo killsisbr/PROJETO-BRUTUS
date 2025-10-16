@@ -64,6 +64,41 @@ let obterUnidade = require('./src/utils/obterUnidade').obterUnidade;
 // Estado do cliente WhatsApp
 let isReady = false;
 
+// Estado do robô (persistido em disk)
+let robotState = { active: false };
+
+// Helper: ler/gravary estado do robô em data/robot-state.json
+function robotStatePath() {
+  return path.join(__dirname, 'data', 'robot-state.json');
+}
+
+function readRobotState() {
+  try {
+    const p = robotStatePath();
+    if (!fs.existsSync(p)) return robotState;
+    const raw = fs.readFileSync(p, 'utf8');
+    const parsed = JSON.parse(raw);
+    robotState = Object.assign({}, robotState, parsed || {});
+    return robotState;
+  } catch (e) {
+    console.error('Erro ao ler robot-state:', e);
+    return robotState;
+  }
+}
+
+function writeRobotState() {
+  try {
+    const p = robotStatePath();
+    const dir = path.dirname(p);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(p, JSON.stringify(robotState, null, 2), 'utf8');
+    return true;
+  } catch (e) {
+    console.error('Erro ao gravar robot-state:', e);
+    return false;
+  }
+}
+
 // Gatilhos personalizados (declaração antecipada para evitar acessos antes da inicialização)
 let gatilhosPersonalizados = {};
 
@@ -331,6 +366,8 @@ const { refreshMensagens } = require('./src/utils/mensagens');
 
 // Carregar gatilhos personalizados
 carregarGatilhos();
+// Carregar estado do robô
+readRobotState();
 
 // --- Configura servidor de dashboard (admin) ---
 const publicDir = path.join(process.cwd(), 'public');
@@ -1399,6 +1436,40 @@ app.get('/api/whatsapp/status', (req, res) => {
   }
 });
 
+// API: obter status do robô (ativo/inativo) - inclui info de whatsapp para conveniência
+app.get('/api/robot/status', (req, res) => {
+  try {
+    // garantir que o estado em memória esteja atualizado a partir do disco
+    readRobotState();
+    const payload = {
+      ok: true,
+      active: !!robotState.active,
+      // motivos de conveniência para a UI
+      whatsapp: { connected: isReady, hasQR: !!currentQRCode }
+    };
+    res.json(payload);
+  } catch (err) {
+    console.error('Erro /api/robot/status', err);
+    res.status(500).json({ ok: false, error: String(err) });
+  }
+});
+
+// API: alternar estado do robô (POST)
+app.post('/api/robot/toggle', (req, res) => {
+  try {
+    // read latest
+    readRobotState();
+    robotState.active = !robotState.active;
+    const ok = writeRobotState();
+    // emitir via socket para UI em tempo real
+    try { io.emit('robot:state', { active: !!robotState.active }); } catch (e) {}
+    res.json({ ok: !!ok, active: !!robotState.active });
+  } catch (err) {
+    console.error('Erro /api/robot/toggle', err);
+    res.status(500).json({ ok: false, error: String(err) });
+  }
+});
+
 // API: forçar nova geração de QR Code (reinicializar cliente)
 app.post('/api/whatsapp/restart', (req, res) => {
   try {
@@ -2353,6 +2424,16 @@ client.on('message_create', async (msg) => {
   // Verifica se é uma mensagem recebida (não enviada por você)
   if (!msg.fromMe) {
     try {
+      // Checar estado do robô: se desativado, não responder automaticamente
+      try {
+        readRobotState();
+        if (!robotState.active) {
+          const idSimple = (msg.from || '').replace('@c.us','').replace(/@s\.whatsapp\.net$/,'');
+          console.log(`[ROBOT OFF] Ignorando mensagem recebida de ${idSimple}: ${String(msg.body || '').slice(0,100)}`);
+          try { events.emit('update', { type: 'robot:off', id: idSimple, carrinho: (carrinhos[idSimple] ? sanitizeCarrinho(carrinhos[idSimple]) : null) }); } catch(e) {}
+          return;
+        }
+      } catch (e) { /* se falhar ao ler estado, continua normalmente */ }
   // Obter informações de cliente e carrinho atual
   let idAtual = msg.from.replace('@c.us', '');
   let carrinhoAtual = carrinhos[idAtual];
@@ -2607,6 +2688,8 @@ function scheduleFollowupForClient(id, delayMs = 10 * 60 * 1000) {
 
     c._followupTimeout = setTimeout(async () => {
       try {
+        // Respeitar estado do robô antes de enviar follow-up
+        try { readRobotState(); if (!robotState.active) { console.log(`[FOLLOWUP SKIPPED] Robô desativado, não enviando follow-up para ${idNorm}`); return; } } catch(e) { /* se falhar, continue */ }
         const current = carrinhos[idNorm];
         if (!current) return;
         const stillHasItems = Array.isArray(current.carrinho) && current.carrinho.length > 0;
