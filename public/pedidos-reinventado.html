@@ -135,6 +135,13 @@
       color: var(--dark);
     }
     
+    .btn-robot-active {
+      background: linear-gradient(135deg, #00ff00, #00cc00);
+      border: 1px solid rgba(0, 255, 0, 0.4);
+      color: var(--dark);
+      animation: pulse 2s infinite;
+    }
+    
     .btn-danger {
       background: linear-gradient(135deg, var(--danger), #FF6347);
       border: 1px solid rgba(255, 69, 0, 0.4);
@@ -347,6 +354,9 @@
           <h1>Painel de Pedidos</h1>
         </div>
         <div class="header-actions">
+          <button id="btn-robot-toggle" class="btn btn-warning" title="Ligar/Desligar Robô">
+            <i class="fas fa-power-off"></i>
+          </button>
           <button id="btn-qr-whatsapp" class="btn btn-primary" title="QR Code WhatsApp">
             <i class="fas fa-qrcode"></i>
           </button>
@@ -950,6 +960,59 @@
     document.getElementById('btn-novo-pedido').addEventListener('click', () => {
       alert('Função de novo pedido será implementada');
     });
+    
+    // Adicionar evento para o botão de ligar/desligar o robô
+    document.getElementById('btn-robot-toggle').addEventListener('click', async () => {
+      try {
+        const response = await fetch('/api/robot/toggle', { method: 'POST' });
+        const data = await response.json();
+        
+        if (data.ok) {
+          // Atualizar o estilo do botão com base no estado do robô
+          const button = document.getElementById('btn-robot-toggle');
+          
+          if (data.active) {
+            button.classList.add('btn-robot-active');
+            button.title = 'Robô Ativado (Clique para desativar)';
+            alert('Robô ativado com sucesso!');
+          } else {
+            button.classList.remove('btn-robot-active');
+            button.title = 'Robô Desativado (Clique para ativar)';
+            alert('Robô desativado com sucesso!');
+          }
+        } else {
+          alert('Erro ao alternar o estado do robô: ' + data.error);
+        }
+      } catch (error) {
+        console.error('Erro ao alternar o estado do robô:', error);
+        alert('Erro ao alternar o estado do robô');
+      }
+    });
+    
+    // Função para verificar o estado do robô ao carregar a página
+    async function checkRobotStatus() {
+      try {
+        const response = await fetch('/api/robot/status');
+        const data = await response.json();
+        
+        if (data.ok) {
+          const button = document.getElementById('btn-robot-toggle');
+          
+          if (data.active) {
+            button.classList.add('btn-robot-active');
+            button.title = 'Robô Ativado (Clique para desativar)';
+          } else {
+            button.classList.remove('btn-robot-active');
+            button.title = 'Robô Desativado (Clique para ativar)';
+          }
+        }
+      } catch (error) {
+        console.error('Erro ao verificar o estado do robô:', error);
+      }
+    }
+    
+    // Verificar o estado do robô ao carregar a página
+    checkRobotStatus();
   </script>
 </body>
 </html>

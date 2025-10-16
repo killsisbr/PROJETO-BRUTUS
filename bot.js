@@ -64,6 +64,12 @@ let obterUnidade = require('./src/utils/obterUnidade').obterUnidade;
 // Estado do cliente WhatsApp
 let isReady = false;
 
+// Estado do robô (ativo/inativo)
+let isRobotActive = true;
+
+// Config: controlar se mensagens de grupos devem ser ignoradas
+const IGNORE_GROUP_MESSAGES = true; // true = não responder grupos; false = responder
+
 // Gatilhos personalizados (declaração antecipada para evitar acessos antes da inicialização)
 let gatilhosPersonalizados = {};
 
@@ -1399,6 +1405,30 @@ app.get('/api/whatsapp/status', (req, res) => {
   }
 });
 
+// API: obter status do robô
+app.get('/api/robot/status', (req, res) => {
+  try {
+    res.json({ ok: true, active: isRobotActive });
+  } catch (err) {
+    console.error('Erro /api/robot/status', err);
+    res.status(500).json({ ok: false, error: String(err) });
+  }
+});
+
+// API: ligar/desligar o robô
+app.post('/api/robot/toggle', (req, res) => {
+  try {
+    isRobotActive = !isRobotActive;
+    res.json({ ok: true, active: isRobotActive, message: `Robô ${isRobotActive ? 'ativado' : 'desativado'} com sucesso!` });
+    
+    // Emitir status via Socket.IO para atualizar interface em tempo real
+    io.emit('robot:status', { active: isRobotActive });
+  } catch (err) {
+    console.error('Erro /api/robot/toggle', err);
+    res.status(500).json({ ok: false, error: String(err) });
+  }
+});
+
 // API: forçar nova geração de QR Code (reinicializar cliente)
 app.post('/api/whatsapp/restart', (req, res) => {
   try {
@@ -1450,11 +1480,513 @@ app.get('/api/clientes', async (req, res) => {
     
     // Se a função existir, usá-la
     const clientes = clientService.obterTodosClientes();
+    
+    // Verificar se a resposta é um array
+    if (!Array.isArray(clientes)) {
+      res.status(500).json({ ok: false, error: 'Resposta inválida do serviço de clientes' });
+      return;
+    }
+    
     res.json({ ok: true, clientes });
   } catch (err) {
-    console.error('Erro /api/clientes', err);
+    console.error('Erro ao obter clientes:', err);
     res.status(500).json({ ok: false, error: String(err) });
   }
+});
+
+// API para adicionar um novo cliente
+app.post('/api/clientes', async (req, res) => {
+  try {
+    const { numero, nome, endereco } = req.body;
+    if (!numero || !nome) {
+      return res.status(400).json({ ok: false, error: 'Número e nome são obrigatórios' });
+    }
+    
+    // Verificar se o serviço de cliente está disponível
+    if (!clientService || typeof clientService.adicionarCliente !== 'function') {
+      res.status(500).json({ ok: false, error: 'Serviço de clientes não disponível' });
+      return;
+    }
+    
+    // Adicionar o cliente
+    const cliente = clientService.adicionarCliente({ numero, nome, endereco });
+    
+    // Verificar se o cliente foi adicionado com sucesso
+    if (!cliente) {
+      res.status(500).json({ ok: false, error: 'Erro ao adicionar cliente' });
+      return;
+    }
+    
+    res.json({ ok: true, cliente });
+  } catch (err) {
+    console.error('Erro ao adicionar cliente:', err);
+    res.status(500).json({ ok: false, error: String(err) });
+  }
+});
+
+// API para atualizar um cliente existente
+app.put('/api/clientes/:numero', async (req, res) => {
+  try {
+    const { numero } = req.params;
+    const { nome, endereco } = req.body;
+    if (!numero || !nome) {
+      return res.status(400).json({ ok: false, error: 'Número e nome são obrigatórios' });
+    }
+    
+    // Verificar se o serviço de cliente está disponível
+    if (!clientService || typeof clientService.atualizarCliente !== 'function') {
+      res.status(500).json({ ok: false, error: 'Serviço de clientes não disponível' });
+      return;
+    }
+    
+    // Atualizar o cliente
+    const cliente = clientService.atualizarCliente(numero, { nome, endereco });
+    
+    // Verificar se o cliente foi atualizado com sucesso
+    if (!cliente) {
+      res.status(404).json({ ok: false, error: 'Cliente não encontrado' });
+      return;
+    }
+    
+    res.json({ ok: true, cliente });
+  } catch (err) {
+    console.error('Erro ao atualizar cliente:', err);
+    res.status(500).json({ ok: false, error: String(err) });
+  }
+});
+
+// API para deletar um cliente
+app.delete('/api/clientes/:numero', async (req, res) => {
+  try {
+    const { numero } = req.params;
+    if (!numero) {
+      return res.status(400).json({ ok: false, error: 'Número é obrigatório' });
+    }
+    
+    // Verificar se o serviço de cliente está disponível
+    if (!clientService || typeof clientService.deletarCliente !== 'function') {
+      res.status(500).json({ ok: false, error: 'Serviço de clientes não disponível' });
+      return;
+    }
+    
+    // Deletar o cliente
+    const sucesso = clientService.deletarCliente(numero);
+    
+    // Verificar se o cliente foi deletado com sucesso
+    if (!sucesso) {
+      res.status(404).json({ ok: false, error: 'Cliente não encontrado' });
+      return;
+    }
+    
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Erro ao deletar cliente:', err);
+    res.status(500).json({ ok: false, error: String(err) });
+  }
+});
+
+// API para obter o carrinho de um cliente
+app.get('/api/carrinho/:numero', (req, res) => {
+  try {
+    const numero = req.params.numero;
+    if (!numero) return res.status(400).json({ ok: false, error: 'missing_numero' });
+    const carrinho = carrinhos[numero] || {};
+    res.json({ ok: true, carrinho });
+  } catch (err) {
+    console.error('Erro /api/carrinho/:numero', err);
+    res.status(500).json({ ok: false, error: String(err) });
+  }
+});
+
+// API para adicionar um item ao carrinho
+app.post('/api/carrinho/:numero/:itemId', (req, res) => {
+  try {
+    const numero = req.params.numero;
+    const itemId = parseInt(req.params.itemId, 10);
+    const quantidade = parseInt(req.body.quantidade || 1, 10);
+    if (!numero || isNaN(itemId) || isNaN(quantidade) || quantidade <= 0) {
+      return res.status(400).json({ ok: false, error: 'parâmetros inválidos' });
+    }
+    
+    const item = cardapioService.getItem(itemId);
+    if (!item) {
+      return res.status(404).json({ ok: false, error: 'item não encontrado' });
+    }
+    
+    const carrinho = carrinhos[numero] || { carrinho: [], valorTotal: 0 };
+    const existingItem = carrinho.carrinho.find(i => i.id === itemId);
+    
+    if (existingItem) {
+      existingItem.quantidade += quantidade;
+    } else {
+      carrinho.carrinho.push({ id: itemId, nome: item.nome, preco: item.preco, quantidade });
+    }
+    
+    carrinho.valorTotal += item.preco * quantidade;
+    carrinho.ts = Date.now();
+    carrinhos[numero] = carrinho;
+    
+    res.json({ ok: true, carrinho });
+  } catch (err) {
+    console.error('Erro /api/carrinho/:numero/:itemId', err);
+    res.status(500).json({ ok: false, error: String(err) });
+  }
+});
+
+// API para atualizar um item no carrinho
+app.put('/api/carrinho/:numero/:itemId', (req, res) => {
+  try {
+    const numero = req.params.numero;
+    const itemId = parseInt(req.params.itemId, 10);
+    const quantidade = parseInt(req.body.quantidade || 1, 10);
+    if (!numero || isNaN(itemId) || isNaN(quantidade) || quantidade <= 0) {
+      return res.status(400).json({ ok: false, error: 'parâmetros inválidos' });
+    }
+    
+    const carrinho = carrinhos[numero];
+    if (!carrinho) {
+      return res.status(404).json({ ok: false, error: 'carrinho não encontrado' });
+    }
+    
+    const itemIndex = carrinho.carrinho.findIndex(i => i.id === itemId);
+    if (itemIndex === -1) {
+      return res.status(404).json({ ok: false, error: 'item não encontrado no carrinho' });
+    }
+    
+    const item = carrinho.carrinho[itemIndex];
+    const valorAntigo = item.preco * item.quantidade;
+    const valorNovo = item.preco * quantidade;
+    
+    carrinho.carrinho[itemIndex].quantidade = quantidade;
+    carrinho.valorTotal = carrinho.valorTotal - valorAntigo + valorNovo;
+    carrinho.ts = Date.now();
+    
+    res.json({ ok: true, carrinho });
+  } catch (err) {
+    console.error('Erro /api/carrinho/:numero/:itemId', err);
+    res.status(500).json({ ok: false, error: String(err) });
+  }
+});
+
+// API para remover um item do carrinho
+app.delete('/api/carrinho/:numero/:itemId', (req, res) => {
+  try {
+    const numero = req.params.numero;
+    const itemId = parseInt(req.params.itemId, 10);
+    if (!numero || isNaN(itemId)) {
+      return res.status(400).json({ ok: false, error: 'parâmetros inválidos' });
+    }
+    
+    const carrinho = carrinhos[numero];
+    if (!carrinho) {
+      return res.status(404).json({ ok: false, error: 'carrinho não encontrado' });
+    }
+    
+    const itemIndex = carrinho.carrinho.findIndex(i => i.id === itemId);
+    if (itemIndex === -1) {
+      return res.status(404).json({ ok: false, error: 'item não encontrado no carrinho' });
+    }
+    
+    const item = carrinho.carrinho[itemIndex];
+    const valorRemovido = item.preco * item.quantidade;
+    
+    carrinho.carrinho.splice(itemIndex, 1);
+    carrinho.valorTotal -= valorRemovido;
+    carrinho.ts = Date.now();
+    
+    res.json({ ok: true, carrinho });
+  } catch (err) {
+    console.error('Erro /api/carrinho/:numero/:itemId', err);
+    res.status(500).json({ ok: false, error: String(err) });
+  }
+});
+
+// API para limpar o carrinho de um cliente
+app.delete('/api/carrinho/:numero', (req, res) => {
+  try {
+    const numero = req.params.numero;
+    if (!numero) {
+      return res.status(400).json({ ok: false, error: 'missing_numero' });
+    }
+    
+    delete carrinhos[numero];
+    
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Erro /api/carrinho/:numero', err);
+    res.status(500).json({ ok: false, error: String(err) });
+  }
+});
+
+// API para finalizar um pedido
+app.post('/api/pedido/:numero', (req, res) => {
+  try {
+    const numero = req.params.numero;
+    const carrinho = carrinhos[numero];
+    if (!carrinho) {
+      return res.status(404).json({ ok: false, error: 'carrinho não encontrado' });
+    }
+    
+    const itens = carrinho.carrinho.map(item => ({
+      id: item.id,
+      nome: item.nome,
+      preco: item.preco,
+      quantidade: item.quantidade
+    }));
+    
+    const total = carrinho.valorTotal;
+    const ts = carrinho.ts;
+    const estado = 'aguardando';
+    const entrega = req.body.entrega || false;
+    const valorEntrega = entrega ? parseFloat(req.body.valorEntrega || 7.00) : 0;
+    const endereco = req.body.endereco || null;
+    const obs = req.body.obs || null;
+    
+    const pedido = {
+      numero,
+      itens,
+      total,
+      ts,
+      estado,
+      entrega,
+      valorEntrega,
+      endereco,
+      obs
+    };
+    
+    // Salvar pedido no banco de dados
+    if (clientService && typeof clientService.salvarPedido === 'function') {
+      clientService.salvarPedido(pedido);
+    }
+    
+    // Emitir evento para interface de admin
+    io.emit('pedido-novo', pedido);
+    
+    // Limpar carrinho após finalização
+    delete carrinhos[numero];
+    
+    res.json({ ok: true, pedido });
+  } catch (err) {
+    console.error('Erro /api/pedido/:numero', err);
+    res.status(500).json({ ok: false, error: String(err) });
+  }
+});
+
+// API para atualizar o estado de um pedido
+app.put('/api/pedido/:numero/:id', (req, res) => {
+  try {
+    const numero = req.params.numero;
+    const id = req.params.id;
+    const novoEstado = req.body.estado;
+    if (!numero || !id || !novoEstado) {
+      return res.status(400).json({ ok: false, error: 'parâmetros inválidos' });
+    }
+    
+    // Buscar pedido no banco de dados
+    if (clientService && typeof clientService.obterPedidoPorId === 'function') {
+      const pedido = clientService.obterPedidoPorId(id);
+      if (!pedido) {
+        return res.status(404).json({ ok: false, error: 'pedido não encontrado' });
+      }
+      
+      pedido.estado = novoEstado;
+      pedido.ts = Date.now();
+      clientService.atualizarPedido(pedido);
+    }
+    
+    // Emitir evento para interface de admin
+    io.emit('pedido-atualizado', { id, estado: novoEstado });
+    
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Erro /api/pedido/:numero/:id', err);
+    res.status(500).json({ ok: false, error: String(err) });
+  }
+});
+
+// API para deletar um pedido
+app.delete('/api/pedido/:numero/:id', (req, res) => {
+  try {
+    const numero = req.params.numero;
+    const id = req.params.id;
+    if (!numero || !id) {
+      return res.status(400).json({ ok: false, error: 'parâmetros inválidos' });
+    }
+    
+    // Deletar pedido no banco de dados
+    if (clientService && typeof clientService.deletarPedido === 'function') {
+      const sucesso = clientService.deletarPedido(id);
+      if (!sucesso) {
+        return res.status(404).json({ ok: false, error: 'pedido não encontrado' });
+      }
+    }
+    
+    // Emitir evento para interface de admin
+    io.emit('pedido-deletado', { id });
+    
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Erro /api/pedido/:numero/:id', err);
+    res.status(500).json({ ok: false, error: String(err) });
+  }
+});
+
+// API para enviar mensagem para um cliente
+app.post('/api/enviar-mensagem/:numero', (req, res) => {
+  try {
+    const numero = req.params.numero;
+    const mensagem = req.body.mensagem;
+    if (!numero || !mensagem) {
+      return res.status(400).json({ ok: false, error: 'parâmetros inválidos' });
+    }
+    
+    client.sendMessage(numero, mensagem)
+      .then(response => {
+        console.log('Mensagem enviada:', response);
+        res.json({ ok: true, response });
+      })
+      .catch(err => {
+        console.error('Erro ao enviar mensagem:', err);
+        res.status(500).json({ ok: false, error: String(err) });
+      });
+  } catch (err) {
+    console.error('Erro /api/enviar-mensagem/:numero', err);
+    res.status(500).json({ ok: false, error: String(err) });
+  }
+});
+
+// API para enviar imagem para um cliente
+app.post('/api/enviar-imagem/:numero', (req, res) => {
+  try {
+    const numero = req.params.numero;
+    const url = req.body.url;
+    if (!numero || !url) {
+      return res.status(400).json({ ok: false, error: 'parâmetros inválidos' });
+    }
+    
+    client.sendMessage(numero, url, { sendMediaAsDocument: false })
+      .then(response => {
+        console.log('Imagem enviada:', response);
+        res.json({ ok: true, response });
+      })
+      .catch(err => {
+        console.error('Erro ao enviar imagem:', err);
+        res.status(500).json({ ok: false, error: String(err) });
+      });
+  } catch (err) {
+    console.error('Erro /api/enviar-imagem/:numero', err);
+    res.status(500).json({ ok: false, error: String(err) });
+  }
+});
+
+
+
+client.initialize();
+
+// Eventos com melhor debugging
+client.on('qr', (qr) => {
+  console.log('📱 QR Code recebido! Escaneie com WhatsApp...');
+  
+  // Armazenar QR Code para API
+  currentQRCode = qr;
+  
+  // Emitir QR Code via Socket.IO para clientes conectados
+  io.emit('whatsapp:qrcode', { qrcode: qr, timestamp: Date.now() });
+  
+  qrcode.toString(qr, { type: 'terminal', small: true }, (err, url) => {
+    if (err) {
+      console.error('❌ Erro ao gerar QR code:', err);
+    } else {
+      console.log(url);
+      console.log('⏰ QR Code exibido. Aguardando escaneamento...');
+    }
+  });
+});
+
+client.on('message', async (msg) => {
+  // Verificar se o robô está ativo antes de processar qualquer mensagem
+  if (!isRobotActive) {
+    console.log('[ROBOT] Robô desativado - ignorando mensagem:', msg.body);
+    return;
+  }
+
+  // Ignorar mensagens de grupos se configurado
+  try {
+    const from = String(msg.from || '');
+    if (IGNORE_GROUP_MESSAGES && /@g\.us$/i.test(from)) {
+      console.log('[ROBOT] Ignorando mensagem de grupo:', from, msg.body);
+      return;
+    }
+  } catch (e) {
+    // não bloquear o fluxo se houver erro ao inspecionar 'from'
+  }
+
+  // Verificar se é uma mensagem de texto
+  if (msg.type !== 'text') {
+    console.log('[ROBOT] Ignorando mensagem não-texto:', msg.type);
+    return;
+  }
+
+  const numero = msg.from.replace(/@s\.whatsapp\.net$/, '');
+  const conteudo = msg.body.trim();
+
+  // Verificar se há gatilhos personalizados para a mensagem
+  const gatilho = mensagensService.findGatilho(conteudo);
+  if (gatilho) {
+    console.log(`[ROBOT] Encontrado gatilho: ${gatilho.palavra}`);
+    const mensagem = mensagensService.getMensagem(gatilho.mensagem_id);
+    if (mensagem) {
+      console.log(`[ROBOT] Enviando mensagem: ${mensagem.conteudo}`);
+      client.sendMessage(numero, mensagem.conteudo, { sendMediaAsDocument: false })
+        .then(response => {
+          console.log('Mensagem enviada:', response);
+        })
+        .catch(err => {
+          console.error('Erro ao enviar mensagem:', err);
+        });
+    } else {
+      console.log('[ROBOT] Mensagem não encontrada para o gatilho:', gatilho.mensagem_id);
+    }
+    return;
+  }
+
+  // Verificar se há gatilhos baseados em palavras-chave
+  const resposta = mensagensService.getResposta(conteudo);
+  if (resposta) {
+    console.log(`[ROBOT] Encontrado resposta para: ${conteudo}`);
+    client.sendMessage(numero, resposta, { sendMediaAsDocument: false })
+      .then(response => {
+        console.log('Mensagem enviada:', response);
+      })
+      .catch(err => {
+        console.error('Erro ao enviar mensagem:', err);
+      });
+    return;
+  }
+
+  console.log(`[ROBOT] Nenhum gatilho encontrado para: ${conteudo}`);
+});
+
+client.on('ready', () => {
+  isReady = true;
+  console.log('[WHATSAPP] Cliente pronto!');
+  io.emit('whatsapp:ready');
+});
+
+client.on('auth_failure', (msg) => {
+  console.error('[WHATSAPP] Falha na autenticação:', msg);
+  io.emit('whatsapp:auth_failure', msg);
+});
+
+client.on('disconnected', (reason) => {
+  console.log('[WHATSAPP] Cliente desconectado:', reason);
+  isReady = false;
+  currentQRCode = null;
+  io.emit('whatsapp:disconnected', reason);
+});
+
+app.listen(PORT, () => {
+  console.log(`Servidor rodando na porta ${PORT}`);
 });
 
 // API para atualizar informações de um cliente
@@ -2173,40 +2705,7 @@ function getChromePath() {
   }
 }
 
-const chromeExecutablePath = getChromePath();
-const client = new Client({
-  puppeteer: {
-    args: [
-      '--no-sandbox',
-      '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage',
-      '--disable-accelerated-2d-canvas',
-      '--no-first-run',
-      '--no-zygote',
-      '--disable-gpu',
-      '--disable-web-security',
-      '--disable-features=VizDisplayCompositor',
-      '--disable-background-timer-throttling',
-      '--disable-backgrounding-occluded-windows',
-      '--disable-renderer-backgrounding'
-    ],
-    headless: true,
-    executablePath: chromeExecutablePath || undefined,
-    timeout: 90000,
-    defaultViewport: null
-  },
-  webVersionCache: {
-    type: 'remote',
-    remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2412.54.html',
-  },
-  authStrategy: new LocalAuth({
-    clientId: 'bot-assist',
-    dataPath: path.join(__dirname, 'Auth') // Salvar dados de autenticação na pasta Auth
-  }),
-  takeoverOnConflict: true,
-  takeoverTimeoutMs: 15000,
-  qrMaxRetries: 5
-});
+
 
 client.initialize();
 

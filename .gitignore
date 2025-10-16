@@ -4,7 +4,7 @@ Auth/
 Pedidos/
 # Ignorar cache do WhatsApp Web JS
 .wwebjs_cache/
-
+data/
 # Ignorar diretório de usuários
 user/
 
