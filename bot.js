@@ -2294,7 +2294,6 @@ process.on('uncaughtException', (error) => {
 client.on('message_create', async (msg) => {
   // Verifica se a mensagem foi enviada por você
   //vamos ignorar grupos
-  if (isGroupId(msg.from) || isGroupId(msg.to)) return;
   if (msg.id === 'status@broadcast') return; // ignora mensagens de status
   //ignorar @g.us
   if (msg.from && msg.from.endsWith('@g.us')) return; // ignora mensagens de grupos
