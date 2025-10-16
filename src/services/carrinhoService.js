@@ -523,8 +523,9 @@ function imprimirPedido(id) {
             "<p><strong>Forma:</strong> " + formaDePagamento + "</p>" +
             trocoInfoHtml;
             
-    if (observacao !== 'Nenhuma') {
-        htmlContent += "<div class=\"section-title\">OBSERVAÇÃO</div><p>" + observacao + "</p>";
+    // Exibe observação somente se existir texto válido (não vazio)
+    if (cliente.observacao && String(cliente.observacao).trim().length > 0) {
+        htmlContent += "<div class=\"section-title\">OBSERVAÇÃO</div><p>" + String(cliente.observacao).trim() + "</p>";
     }
 
     htmlContent += "<p class=\"total\">VALOR TOTAL: R$" + valorTotalPedido.toFixed(2) + "</p>" +

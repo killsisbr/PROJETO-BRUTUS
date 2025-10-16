@@ -44,7 +44,13 @@ async function menuEntregaRetirada(idAtual, carrinhoAtual, msg, client) {
         
         // Atualizar valores no carrinho
         carrinhoAtual.valorEntrega = valorEntrega;
-        const totalCarrinho = valorTotal(idAtual);
+        const totalCalculado = valorTotal(idAtual);
+        // Se a entrega ainda não foi confirmada, somamos manualmente a taxa para exibição
+        let totalExibido = totalCalculado;
+        if (!carrinhoAtual.entrega && typeof carrinhoAtual.valorEntrega === 'number' && carrinhoAtual.valorEntrega > 0) {
+            totalExibido = parseFloat((totalCalculado + carrinhoAtual.valorEntrega).toFixed(2));
+        }
+        carrinhoAtual.valorTotal = totalExibido;
         
         const enderecoTexto = typeof carrinhoAtual.endereco === 'string' 
             ? carrinhoAtual.endereco 
@@ -56,7 +62,7 @@ Endereço salvo: ${enderecoTexto}
 
 ` +
                  `💸 Taxa de entrega: R$ ${carrinhoAtual.valorEntrega.toFixed(2)}\n` +
-                 `🛒 *VALOR FINAL*: R$ ${totalCarrinho.toFixed(2)}\n\n` +
+                 `🛒 *VALOR FINAL*: R$ ${totalExibido.toFixed(2)}\n\n` +
                  `*S* - Confirmar este endereço\nCaso esteja errado, digite novamente.`);
 
         // Aguardar confirmação do endereço antes de prosseguir

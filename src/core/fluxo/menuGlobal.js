@@ -142,13 +142,19 @@ async function menuInicial(idAtual, carrinhoAtual, msg, client, MessageMedia) {
                 } else {
                     // Calcula taxa de entrega e total e mostra uma confirmação como no fluxo quando o usuário envia endereço
                     carrinhoAtual.valorEntrega = 7;
-                    let totalGeral = valorTotal(idAtual);
-                    carrinhoAtual.valorTotal = totalGeral;
+                    // Calcula o total atual e, se a entrega ainda não foi confirmada,
+                    // exibe o total incluindo a taxa manualmente para evitar omissão.
+                    const totalCalculado = valorTotal(idAtual);
+                    let totalExibido = totalCalculado;
+                    if (!carrinhoAtual.entrega && typeof carrinhoAtual.valorEntrega === 'number' && carrinhoAtual.valorEntrega > 0) {
+                        totalExibido = parseFloat((totalCalculado + carrinhoAtual.valorEntrega).toFixed(2));
+                    }
+                    carrinhoAtual.valorTotal = totalExibido;
                     msg.reply(
                         `${resp.msgEnderecoConfirma} \n➥ _${carrinhoAtual.endereco}_\n\n` +
                         `_Por favor, caso de interior envie *LOCALIZAÇÃO*._\n` +
                         `💸 Taxa de entrega: R$ ${carrinhoAtual.valorEntrega.toFixed(2)}\n` +
-                        `🛒 *VALOR FINAL*: R$ ${totalGeral.toFixed(2)}\n\n` +
+                        `🛒 *VALOR FINAL*: R$ ${totalExibido.toFixed(2)}\n\n` +
                         `Digite *S* para confirmar ou envie outro endereço.`
                     );
                 }
