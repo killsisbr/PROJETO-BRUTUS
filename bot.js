@@ -594,6 +594,23 @@ app.get('/api/cardapio/mappings', async (req, res) => {
   } catch (e) { console.error('/api/cardapio/mappings GET error', e); res.status(500).json({ ok: false, error: String(e) }); }
 });
 
+// Rota para verificar se um item com o mesmo nome já existe
+app.get('/api/cardapio/check-name/:nome', async (req, res) => {
+  try {
+    const nome = req.params.nome;
+    const excludeId = req.query.excludeId; // ID a ser excluído da verificação (para edição)
+    
+    
+    await cardapioService.init();
+    const existingItem = cardapioService.findItemByName(nome, excludeId);
+    
+    res.json({ ok: true, exists: !!existingItem, item: existingItem || null });
+  } catch (e) { 
+    console.error('/api/cardapio/check-name GET error', e); 
+    res.status(500).json({ ok: false, error: String(e) }); 
+  }
+});
+
 app.post('/api/cardapio/mappings', async (req, res) => {
   try {
     const { nome, itemId } = req.body || {};

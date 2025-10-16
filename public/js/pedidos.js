@@ -927,6 +927,68 @@ class CardapioManager {
     }
 
     try {
+      // Verificar se já existe um item com o mesmo nome (exceto quando estamos editando)
+      if (!this.editingItem) {
+        const checkResponse = await fetch(`/api/cardapio/check-name/${encodeURIComponent(nome)}`);
+        if (checkResponse.ok) {
+          const checkData = await checkResponse.json();
+          if (checkData && checkData.ok && checkData.exists) {
+            const confirmacao = confirm(`Já existe um item com o nome "${nome}". Deseja atualizar esse item existente?`);
+            if (confirmacao) {
+              // Atualizar o item existente
+              const response = await fetch(`/api/cardapio/${encodeURIComponent(checkData.item.id)}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nome, descricao, preco, tipo })
+              });
+              
+              if (response.ok) {
+                const result = await response.json();
+                console.log('🔧 DEBUG: Item atualizado no servidor:', result);
+                
+                // Atualizar mapeamentos se houver gatilhos
+                if (gatilhos.length > 0) {
+                  // Primeiro, remover mapeamentos antigos do item
+                  try {
+                    await fetch(`/api/cardapio/mappings/${encodeURIComponent(checkData.item.id)}`, {
+                      method: 'DELETE'
+                    });
+                  } catch (e) {
+                    console.warn('Erro ao remover mapeamentos antigos:', e);
+                  }
+                  
+                  // Adicionar novos mapeamentos
+                  for (const gatilho of gatilhos) {
+                    try {
+                      await fetch('/api/cardapio/mappings', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ nome: gatilho.toLowerCase(), itemId: checkData.item.id })
+                      });
+                    } catch (e) {
+                      console.error('Erro ao adicionar mapeamento:', e);
+                    }
+                  }
+                }
+                
+                showToast('✅ Item atualizado com sucesso', 'success');
+                // Recarregar dados do servidor
+                await this.loadCardapioData();
+                this.clearForm();
+                this.switchTab('visualizar');
+                return;
+              } else {
+                throw new Error('Falha ao atualizar item no servidor');
+              }
+            } else {
+              // Usuário optou por não atualizar, cancelar operação
+              showToast('❌ Operação cancelada', 'info');
+              return;
+            }
+          }
+        }
+      }
+
       if (this.editingItem) {
         // Atualizar item existente via API
         console.log('🔧 DEBUG: Atualizando item existente:', this.editingItem);
@@ -1016,6 +1078,45 @@ class CardapioManager {
 
     this.clearForm();
     this.switchTab('visualizar');
+  }
+
+  clearForm() {
+    document.getElementById('item-nome-unified').value = '';
+    document.getElementById('item-desc-unified').value = '';
+    document.getElementById('item-preco-unified').value = '';
+    document.getElementById('item-tipo-unified').value = '';
+    document.getElementById('item-gatilhos-unified').value = '';
+    this.editingItem = null;
+  }
+
+  switchTab(tabId) {
+    document.getElementById('editar').style.display = tabId === 'editar' ? 'block' : 'none';
+    document.getElementById('visualizar').style.display = tabId === 'visualizar' ? 'block' : 'none';
+    document.getElementById('tabs').querySelectorAll('button').forEach(button => {
+      button.classList.toggle('active', button.id === tabId);
+    });
+  }
+
+  async loadCardapioData() {
+    try {
+      const response = await fetch('/api/cardapio');
+      if (response.ok) {
+        const data = await response.json();
+        this.cardapioData = data.ok ? data.items : [];
+        this.renderCardapioList();
+      } else {
+        throw new Error('Falha ao carregar dados do servidor');
+      }
+    } catch (error) {
+      console.error('Erro ao carregar dados do cardápio:', error);
+      // Fallback para localStorage em caso de erro
+      const localData = localStorage.getItem('cardapio');
+      if (localData) {
+        this.cardapioData = JSON.parse(localData);
+        this.renderCardapioList();
+      }
+      showToast('Erro ao carregar cardápio do servidor, usando dados locais', 'warning');
+    }
   }
 
   clearForm() {
@@ -1350,25 +1451,50 @@ class CardapioManager {
             // Enviar cada item do cardápio para o servidor
             for (const item of data.cardapio) {
               try {
-                // Verificar se o item já existe
-                const checkResponse = await fetch(`/api/cardapio/${encodeURIComponent(item.id)}`);
+                // Verificar se já existe um item com o mesmo nome
+                const checkResponse = await fetch(`/api/cardapio/check-name/${encodeURIComponent(item.nome)}`);
                 if (checkResponse.ok) {
-                  // Item existe, atualizar
-                  await fetch(`/api/cardapio/${encodeURIComponent(item.id)}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(item)
-                  });
+                  const checkData = await checkResponse.json();
+                  if (checkData && checkData.ok && checkData.exists) {
+                    // Item com o mesmo nome já existe, atualizar
+                    await fetch(`/api/cardapio/${encodeURIComponent(checkData.item.id)}`, {
+                      method: 'PUT',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify(item)
+                    });
+                    console.log(`✅ Item "${item.nome}" atualizado (ID: ${checkData.item.id})`);
+                  } else {
+                    // Item não existe, criar novo
+                    await fetch('/api/cardapio', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify(item)
+                    });
+                    console.log(`✅ Item "${item.nome}" criado`);
+                  }
                 } else {
-                  // Item não existe, criar novo
-                  await fetch('/api/cardapio', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(item)
-                  });
+                  // Fallback: verificar se o item existe pelo ID
+                  const checkIdResponse = await fetch(`/api/cardapio/${encodeURIComponent(item.id)}`);
+                  if (checkIdResponse.ok) {
+                    // Item existe, atualizar
+                    await fetch(`/api/cardapio/${encodeURIComponent(item.id)}`, {
+                      method: 'PUT',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify(item)
+                    });
+                    console.log(`✅ Item ID ${item.id} atualizado`);
+                  } else {
+                    // Item não existe, criar novo
+                    await fetch('/api/cardapio', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify(item)
+                    });
+                    console.log(`✅ Item ID ${item.id} criado`);
+                  }
                 }
               } catch (error) {
-                console.error(`Erro ao restaurar item ${item.id}:`, error);
+                console.error(`Erro ao restaurar item "${item.nome}":`, error);
               }
             }
           } catch (error) {

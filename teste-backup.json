@@ -1,0 +1,17 @@
+{
+  "cardapio": [
+    {
+      "id": 1,
+      "nome": "Teste",
+      "descricao": "Item de teste",
+      "preco": 10.0,
+      "tipo": "Lanche"
+    }
+  ],
+  "mapeamentos": {
+    "teste": 1
+  },
+  "timestamp": "2023-06-15T10:30:00.000Z",
+  "totalItens": 1,
+  "totalMapeamentos": 1
+}

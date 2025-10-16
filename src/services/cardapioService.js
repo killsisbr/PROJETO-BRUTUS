@@ -103,6 +103,35 @@ function updateItem(itemId, { nome, descricao, preco, tipo }) {
   } catch (e) { console.error('[cardapioService] updateItem error', e); return false; }
 }
 
+/**
+ * Verifica se um item com o mesmo nome já existe no cardápio
+ * @param {string} nome - Nome do item a ser verificado
+ * @param {number} excludeId - ID do item a ser excluído da verificação (opcional)
+ * @returns {Object|null} - Item encontrado ou null
+ */
+function findItemByName(nome, excludeId = null) {
+  if (!db || !nome) return null;
+  try {
+    const items = getItems();
+    const normalizedNome = String(nome).toLowerCase().trim();
+    
+    for (const item of items) {
+      // Se foi passado um ID para excluir, ignoramos esse item na verificação
+      if (excludeId && item.id === Number(excludeId)) continue;
+      
+      // Comparamos os nomes normalizados
+      if (String(item.nome).toLowerCase().trim() === normalizedNome) {
+        return item;
+      }
+    }
+    
+    return null;
+  } catch (e) {
+    console.error('[cardapioService] findItemByName error', e);
+    return null;
+  }
+}
+
 function getMappings() {
   if (!db) return {};
   try {

@@ -1,15 +1,12 @@
 # Ignorar dependências
 node_modules/
 Auth/
-data/
 Pedidos/
 # Ignorar cache do WhatsApp Web JS
 .wwebjs_cache/
 
 # Ignorar diretório de usuários
 user/
-
-database/
 
 # Ignorar variáveis de ambiente
 .env
