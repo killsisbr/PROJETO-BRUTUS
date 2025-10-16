@@ -600,6 +600,7 @@ app.get('/api/cardapio/check-name/:nome', async (req, res) => {
     const nome = req.params.nome;
     const excludeId = req.query.excludeId; // ID a ser excluído da verificação (para edição)
     
+    if (!nome) return res.status(400).json({ ok: false, error: 'missing_nome' });
     
     await cardapioService.init();
     const existingItem = cardapioService.findItemByName(nome, excludeId);

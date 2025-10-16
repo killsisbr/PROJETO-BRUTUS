@@ -403,6 +403,9 @@ function imprimirPedido(id) {
     const cliente = carrinhos[id];
     const carrinho = cliente.carrinho;
 
+    // Verifica se o carrinho é um array válido
+    const itensValidos = Array.isArray(carrinho) && carrinho.length > 0;
+
     // Obtém o valor total já calculado pelo valorTotal() do carrinhoService
     const valorTotalPedido = valorTotal(id);
     const formaDePagamento = cliente.formaDePagamento || 'Não informado';
@@ -492,12 +495,17 @@ function imprimirPedido(id) {
             "<div class=\"section-title\">ITENS DO PEDIDO</div>" +
             "<ul>";
 
-    if (carrinho.length === 0) {
+    if (!itensValidos) {
         htmlContent += "<li>Nenhum item no carrinho.</li>";
     } else {
         carrinho.forEach(item => {
-            const preparo = item.preparo ? " (" + item.preparo + ")" : "";
-            htmlContent += "<li>" + item.quantidade + "x " + item.nome + preparo + " - R$" + item.preco.toFixed(2) + "</li>";
+            // Verifica se o item tem as propriedades necessárias
+            if (item && typeof item === 'object' && item.hasOwnProperty('nome')) {
+                const preparo = item.preparo ? " (" + item.preparo + ")" : "";
+                const quantidade = item.quantidade || 1;
+                const preco = item.preco || 0;
+                htmlContent += "<li>" + quantidade + "x " + item.nome + preparo + " - R$" + parseFloat(preco).toFixed(2) + "</li>";
+            }
         });
     }
 
