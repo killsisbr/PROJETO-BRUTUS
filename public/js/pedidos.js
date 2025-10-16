@@ -1345,6 +1345,37 @@ class CardapioManager {
             }
           }
           
+          // Atualizar dados no servidor
+          try {
+            // Enviar cada item do cardápio para o servidor
+            for (const item of data.cardapio) {
+              try {
+                // Verificar se o item já existe
+                const checkResponse = await fetch(`/api/cardapio/${encodeURIComponent(item.id)}`);
+                if (checkResponse.ok) {
+                  // Item existe, atualizar
+                  await fetch(`/api/cardapio/${encodeURIComponent(item.id)}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(item)
+                  });
+                } else {
+                  // Item não existe, criar novo
+                  await fetch('/api/cardapio', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(item)
+                  });
+                }
+              } catch (error) {
+                console.error(`Erro ao restaurar item ${item.id}:`, error);
+              }
+            }
+          } catch (error) {
+            console.error('Erro ao restaurar itens no servidor:', error);
+            showToast('⚠️ Itens restaurados localmente (servidor offline)', 'warning');
+          }
+          
           // Atualizar interface
           this.renderCardapioList();
           await this.loadMapeamentos();
