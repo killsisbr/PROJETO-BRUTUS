@@ -420,8 +420,25 @@ class CardapioManager {
     const addMultipleBtn = document.getElementById('adicionar-multiplos-gatilhos-unified');
     const refreshMappingsBtn = document.getElementById('refresh-mapeamentos-unified');
     
-    if (addMappingBtn) addMappingBtn.addEventListener('click', () => this.addMapping());
-    if (addMultipleBtn) addMultipleBtn.addEventListener('click', () => this.addMultipleMappings());
+    if (addMappingBtn) addMappingBtn.addEventListener('click', async (e) => {
+      try {
+        if (e && typeof e.preventDefault === 'function') e.preventDefault();
+        await this.addMapping();
+      } catch (err) {
+        console.error('Erro no handler de adicionar mapeamento:', err);
+        showToast('Erro ao adicionar mapeamento. Veja o console para detalhes.', 'error');
+      }
+    });
+
+    if (addMultipleBtn) addMultipleBtn.addEventListener('click', async (e) => {
+      try {
+        if (e && typeof e.preventDefault === 'function') e.preventDefault();
+        this.addMultipleMappings();
+      } catch (err) {
+        console.error('Erro no handler de adicionar multiplos gatilhos:', err);
+        showToast('Erro ao adicionar múltiplos gatilhos. Veja o console para detalhes.', 'error');
+      }
+    });
     if (refreshMappingsBtn) refreshMappingsBtn.addEventListener('click', () => this.loadMapeamentos());
 
     // Aba Configurações
@@ -1090,11 +1107,29 @@ class CardapioManager {
   }
 
   switchTab(tabId) {
-    document.getElementById('editar').style.display = tabId === 'editar' ? 'block' : 'none';
-    document.getElementById('visualizar').style.display = tabId === 'visualizar' ? 'block' : 'none';
-    document.getElementById('tabs').querySelectorAll('button').forEach(button => {
-      button.classList.toggle('active', button.id === tabId);
+    // Remove active class from all tab buttons
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.classList.remove('active');
     });
+    
+    // Add active class to the clicked tab button
+    const activeBtn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
+    if (activeBtn) {
+      activeBtn.classList.add('active');
+    }
+    
+    // Hide all tab contents
+    document.querySelectorAll('.tab-content').forEach(content => {
+      content.classList.remove('active');
+      content.style.display = 'none';
+    });
+    
+    // Show the active tab content
+    const activeContent = document.getElementById(`tab-${tabId}`);
+    if (activeContent) {
+      activeContent.classList.add('active');
+      activeContent.style.display = 'block';
+    }
   }
 
   async loadCardapioData() {
@@ -1193,68 +1228,136 @@ class CardapioManager {
   }
 
   async addMapping() {
-    const gatilho = prompt('Digite o gatilho (palavra-chave):');
-    if (!gatilho) return;
+    // Read values from the modal form instead of using prompt dialogs
+    const gatilhoInput = document.getElementById('novo-gatilho-unified');
+    const itemIdInput = document.getElementById('novo-item-id-unified');
 
-    const itemNome = prompt('Digite o nome do item:');
-    if (!itemNome) return;
+    const gatilho = gatilhoInput ? String(gatilhoInput.value || '').trim() : '';
+    const itemIdRaw = itemIdInput ? String(itemIdInput.value || '').trim() : '';
 
-    const item = this.cardapioData.find(i => i.nome.toLowerCase().includes(itemNome.toLowerCase()));
-    if (!item) {
-      showToast('❌ Item não encontrado', 'error');
+    if (!gatilho) {
+      showToast('⚠️ Informe o gatilho (palavra-chave)', 'warning');
+      if (gatilhoInput) gatilhoInput.focus();
       return;
     }
 
+    if (!itemIdRaw) {
+      showToast('⚠️ Informe o ID do item', 'warning');
+      if (itemIdInput) itemIdInput.focus();
+      return;
+    }
+
+    // Try to resolve the item by id (preferred) or by name fallback
+    let item = this.cardapioData.find(i => String(i.id) === itemIdRaw);
+    if (!item) {
+      // If itemIdRaw looks like a name, try to match by name
+      item = this.cardapioData.find(i => i.nome && i.nome.toLowerCase().includes(itemIdRaw.toLowerCase()));
+    }
+
+    if (!item) {
+      showToast('❌ Item não encontrado para o ID/Nome informado', 'error');
+      return;
+    }
+
+    const payload = { nome: gatilho.toLowerCase(), itemId: item.id };
+
     try {
-      // Adicionar mapeamento via API
       const response = await fetch('/api/cardapio/mappings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nome: gatilho.toLowerCase(), itemId: item.id })
+        body: JSON.stringify(payload)
       });
-      
+
       if (response.ok) {
         showToast('✅ Mapeamento adicionado ao servidor', 'success');
-        // Recarregar mapeamentos
-        await loadCardapioAndMappings();
+        if (typeof loadCardapioAndMappings === 'function') await loadCardapioAndMappings();
         await this.loadMapeamentos();
+        // clear inputs
+        if (gatilhoInput) gatilhoInput.value = '';
+        if (itemIdInput) itemIdInput.value = '';
       } else {
-        throw new Error('Falha ao adicionar mapeamento');
+        const text = await response.text().catch(() => '');
+        throw new Error('Falha ao adicionar mapeamento - ' + (text || response.statusText));
       }
     } catch (error) {
-      console.error('Erro ao adicionar mapeamento:', error);
+      console.error('Erro ao adicionar mapeamento (server):', error);
       // Fallback: adicionar apenas localmente
       const mapeamentos = JSON.parse(localStorage.getItem('mapeamentos') || '{}');
       mapeamentos[gatilho.toLowerCase()] = item.id;
       localStorage.setItem('mapeamentos', JSON.stringify(mapeamentos));
-      this.loadMapeamentos();
+      await this.loadMapeamentos();
       showToast('✅ Mapeamento adicionado localmente (erro no servidor)', 'warning');
+      // clear inputs
+      if (gatilhoInput) gatilhoInput.value = '';
+      if (itemIdInput) itemIdInput.value = '';
     }
   }
 
   addMultipleMappings() {
-    const text = prompt('Digite os gatilhos separados por vírgula:');
-    if (!text) return;
+    // Read multiple gatilhos and item id from the modal form
+    const gatilhosInput = document.getElementById('cardapio-gatilhos-unified');
+    const itemIdInput = document.getElementById('cardapio-id-unified');
+    const itemNomeInput = document.getElementById('cardapio-nome-unified');
 
-    const itemNome = prompt('Digite o nome do item:');
-    if (!itemNome) return;
+    const text = gatilhosInput ? String(gatilhosInput.value || '').trim() : '';
+    const itemIdRaw = itemIdInput ? String(itemIdInput.value || '').trim() : '';
+    const itemNomeRaw = itemNomeInput ? String(itemNomeInput.value || '').trim() : '';
 
-    const item = this.cardapioData.find(i => i.nome.toLowerCase().includes(itemNome.toLowerCase()));
-    if (!item) {
-      showToast('❌ Item não encontrado', 'error');
+    if (!text) {
+      showToast('⚠️ Informe os gatilhos separados por vírgula', 'warning');
+      if (gatilhosInput) gatilhosInput.focus();
       return;
     }
 
-    const gatilhos = text.split(',').map(g => g.trim()).filter(g => g);
+    if (!itemIdRaw && !itemNomeRaw) {
+      showToast('⚠️ Informe o ID do item ou o nome do item', 'warning');
+      if (itemIdInput) itemIdInput.focus();
+      return;
+    }
+
+    // Resolve item by id or name
+    let item = itemIdRaw ? this.cardapioData.find(i => String(i.id) === itemIdRaw) : null;
+    if (!item && itemNomeRaw) {
+      item = this.cardapioData.find(i => i.nome && i.nome.toLowerCase().includes(itemNomeRaw.toLowerCase()));
+    }
+
+    if (!item) {
+      showToast('❌ Item não encontrado para o ID/Nome informado', 'error');
+      return;
+    }
+
+    const gatilhos = text.split(',').map(g => g.trim()).filter(Boolean);
+    if (!gatilhos.length) {
+      showToast('⚠️ Nenhum gatilho válido encontrado', 'warning');
+      return;
+    }
+
+    // Update localStorage first
     const mapeamentos = JSON.parse(localStorage.getItem('mapeamentos') || '{}');
-    
-    gatilhos.forEach(gatilho => {
-      mapeamentos[gatilho.toLowerCase()] = item.id;
-    });
-    
+    gatilhos.forEach(g => { mapeamentos[g.toLowerCase()] = item.id; });
     localStorage.setItem('mapeamentos', JSON.stringify(mapeamentos));
+
+    // Try to add to server (sequentially), but don't block on failures
+    (async () => {
+      for (const g of gatilhos) {
+        try {
+          await fetch('/api/cardapio/mappings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nome: g.toLowerCase(), itemId: item.id })
+          });
+        } catch (e) {
+          console.warn('Falha ao enviar mapeamento ao servidor para', g, e);
+        }
+      }
+    })();
+
     this.loadMapeamentos();
     showToast(`✅ ${gatilhos.length} mapeamentos adicionados`, 'success');
+    // clear inputs
+    if (gatilhosInput) gatilhosInput.value = '';
+    if (itemIdInput) itemIdInput.value = '';
+    if (itemNomeInput) itemNomeInput.value = '';
   }
 
   async removeMapping(gatilho) {
