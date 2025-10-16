@@ -1,0 +1,24 @@
+{
+  "pkg": {
+    "scripts": [
+      "bot.js"
+    ],
+    "assets": [
+      "cardapio2.jpg",
+      "cardapio.jpg", 
+      "cardapio3.jpg",
+      "./bin/**/*",
+      "./src/**/*",
+      "node_modules/axios/**/*",
+      "node_modules/whatsapp-web.js/**/*",
+      "node_modules/puppeteer/**/*",
+      "node_modules/express/**/*",
+      "node_modules/socket.io/**/*",
+      "node_modules/sql.js/**/*",
+      "node_modules/qrcode/**/*"
+    ],
+    "targets": [
+      "node18-win-x64"
+    ]
+  }
+}

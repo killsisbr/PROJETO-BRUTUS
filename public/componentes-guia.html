@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>📚 BRUTUS - Guia de Componentes</title>
+  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/modals.css">
+  
+  <style>
+    body {
+      padding: var(--spacing-8);
+    }
+    
+    .showcase-section {
+      margin-bottom: var(--spacing-12);
+      padding: var(--spacing-8);
+      background: var(--surface-base);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-2xl);
+      backdrop-filter: blur(var(--blur-lg));
+    }
+    
+    .showcase-title {
+      font-size: var(--font-3xl);
+      font-weight: var(--font-weight-bold);
+      color: var(--text-primary);
+      margin-bottom: var(--spacing-6);
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-3);
+    }
+    
+    .showcase-grid {
+      display: grid;
+      gap: var(--spacing-4);
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    }
+    
+    .showcase-item {
+      padding: var(--spacing-4);
+      background: var(--surface-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+    }
+    
+    .showcase-label {
+      font-size: var(--font-xs);
+      color: var(--text-tertiary);
+      margin-top: var(--spacing-2);
+      font-family: var(--font-mono);
+    }
+    
+    .color-box {
+      width: 100%;
+      height: 80px;
+      border-radius: var(--radius-md);
+      margin-bottom: var(--spacing-2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: var(--font-weight-bold);
+      font-size: var(--font-sm);
+    }
+    
+    .page-title {
+      text-align: center;
+      font-size: var(--font-4xl);
+      font-weight: var(--font-weight-extrabold);
+      background: var(--gradient-glow);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: var(--spacing-8);
+    }
+  </style>
+</head>
+<body>
+  <div style="max-width: 1400px; margin: 0 auto;">
+    <h1 class="page-title">
+      📚 BRUTUS - Guia de Componentes
+    </h1>
+
+    <!-- BOTÕES -->
+    <section class="showcase-section">
+      <h2 class="showcase-title">
+        <i class="fas fa-square"></i>
+        Botões
+      </h2>
+      <div class="showcase-grid">
+        <div class="showcase-item">
+          <button class="btn btn-primary">Primary</button>
+          <div class="showcase-label">.btn.btn-primary</div>
+        </div>
+        <div class="showcase-item">
+          <button class="btn btn-success">Success</button>
+          <div class="showcase-label">.btn.btn-success</div>
+        </div>
+        <div class="showcase-item">
+          <button class="btn btn-danger">Danger</button>
+          <div class="showcase-label">.btn.btn-danger</div>
+        </div>
+        <div class="showcase-item">
+          <button class="btn btn-warning">Warning</button>
+          <div class="showcase-label">.btn.btn-warning</div>
+        </div>
+        <div class="showcase-item">
+          <button class="btn btn-info">Info</button>
+          <div class="showcase-label">.btn.btn-info</div>
+        </div>
+        <div class="showcase-item">
+          <button class="btn btn-secondary">Secondary</button>
+          <div class="showcase-label">.btn.btn-secondary</div>
+        </div>
+        <div class="showcase-item">
+          <button class="btn btn-ghost">Ghost</button>
+          <div class="showcase-label">.btn.btn-ghost</div>
+        </div>
+      </div>
+
+      <h3 style="margin: var(--spacing-6) 0;">Tamanhos</h3>
+      <div style="display: flex; gap: var(--spacing-4); align-items: center;">
+        <button class="btn btn-primary btn-sm">Small</button>
+        <button class="btn btn-primary">Normal</button>
+        <button class="btn btn-primary btn-lg">Large</button>
+        <button class="btn btn-primary btn-icon"><i class="fas fa-heart"></i></button>
+      </div>
+    </section>
+
+    <!-- BADGES -->
+    <section class="showcase-section">
+      <h2 class="showcase-title">
+        <i class="fas fa-tag"></i>
+        Badges
+      </h2>
+      <div style="display: flex; gap: var(--spacing-3); flex-wrap: wrap;">
+        <span class="badge badge-primary">Primary</span>
+        <span class="badge badge-success">Success</span>
+        <span class="badge badge-warning">Warning</span>
+        <span class="badge badge-danger">Danger</span>
+        <span class="badge badge-dot badge-success">Status Ativo</span>
+      </div>
+    </section>
+
+    <!-- CARDS -->
+    <section class="showcase-section">
+      <h2 class="showcase-title">
+        <i class="fas fa-square"></i>
+        Cards
+      </h2>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--spacing-6);">
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Card Simples</h3>
+          </div>
+          <div class="card-body">
+            Este é um card básico com header e body.
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Card com Footer</h3>
+          </div>
+          <div class="card-body">
+            Card com ações no footer.
+          </div>
+          <div class="card-footer">
+            <button class="btn btn-secondary btn-sm">Cancelar</button>
+            <button class="btn btn-primary btn-sm">Salvar</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- INPUTS -->
+    <section class="showcase-section">
+      <h2 class="showcase-title">
+        <i class="fas fa-keyboard"></i>
+        Inputs
+      </h2>
+      <div style="max-width: 600px;">
+        <div style="margin-bottom: var(--spacing-4);">
+          <label style="display: block; margin-bottom: var(--spacing-2); color: var(--text-secondary);">Input Normal</label>
+          <input type="text" class="input" placeholder="Digite algo...">
+        </div>
+
+        <div style="margin-bottom: var(--spacing-4);">
+          <label style="display: block; margin-bottom: var(--spacing-2); color: var(--text-secondary);">Textarea</label>
+          <textarea class="textarea" placeholder="Mensagem longa..."></textarea>
+        </div>
+
+        <div style="margin-bottom: var(--spacing-4);">
+          <label style="display: block; margin-bottom: var(--spacing-2); color: var(--text-secondary);">Select</label>
+          <select class="select">
+            <option>Opção 1</option>
+            <option>Opção 2</option>
+            <option>Opção 3</option>
+          </select>
+        </div>
+
+        <div>
+          <label style="display: block; margin-bottom: var(--spacing-2); color: var(--text-secondary);">Input Group</label>
+          <div class="input-group">
+            <input type="text" class="input" placeholder="Buscar...">
+            <button class="btn btn-primary">
+              <i class="fas fa-search"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LOADING -->
+    <section class="showcase-section">
+      <h2 class="showcase-title">
+        <i class="fas fa-spinner"></i>
+        Loading States
+      </h2>
+      <div style="display: flex; gap: var(--spacing-8); align-items: center;">
+        <div>
+          <div class="spinner spinner-sm"></div>
+          <div class="showcase-label">Small</div>
+        </div>
+        <div>
+          <div class="spinner"></div>
+          <div class="showcase-label">Normal</div>
+        </div>
+        <div>
+          <div class="spinner spinner-lg"></div>
+          <div class="showcase-label">Large</div>
+        </div>
+      </div>
+
+      <h3 style="margin: var(--spacing-6) 0;">Skeleton</h3>
+      <div style="display: flex; flex-direction: column; gap: var(--spacing-3); max-width: 400px;">
+        <div class="skeleton" style="height: 20px; width: 80%;"></div>
+        <div class="skeleton" style="height: 20px; width: 60%;"></div>
+        <div class="skeleton" style="height: 100px;"></div>
+      </div>
+    </section>
+
+    <!-- CORES -->
+    <section class="showcase-section">
+      <h2 class="showcase-title">
+        <i class="fas fa-palette"></i>
+        Paleta de Cores
+      </h2>
+      
+      <h3 style="margin-bottom: var(--spacing-4);">Cores Principais</h3>
+      <div class="showcase-grid">
+        <div class="showcase-item">
+          <div class="color-box" style="background: var(--primary-500);">#6366f1</div>
+          <div class="showcase-label">--primary-500</div>
+        </div>
+        <div class="showcase-item">
+          <div class="color-box" style="background: var(--success-500);">#22c55e</div>
+          <div class="showcase-label">--success-500</div>
+        </div>
+        <div class="showcase-item">
+          <div class="color-box" style="background: var(--danger-500);">#ef4444</div>
+          <div class="showcase-label">--danger-500</div>
+        </div>
+        <div class="showcase-item">
+          <div class="color-box" style="background: var(--warning-500);">#f59e0b</div>
+          <div class="showcase-label">--warning-500</div>
+        </div>
+        <div class="showcase-item">
+          <div class="color-box" style="background: var(--info-500);">#3b82f6</div>
+          <div class="showcase-label">--info-500</div>
+        </div>
+      </div>
+
+      <h3 style="margin: var(--spacing-6) 0 var(--spacing-4);">Tons de Cinza</h3>
+      <div class="showcase-grid">
+        <div class="showcase-item">
+          <div class="color-box" style="background: var(--gray-900); color: white;">#0f172a</div>
+          <div class="showcase-label">--gray-900</div>
+        </div>
+        <div class="showcase-item">
+          <div class="color-box" style="background: var(--gray-800); color: white;">#1e293b</div>
+          <div class="showcase-label">--gray-800</div>
+        </div>
+        <div class="showcase-item">
+          <div class="color-box" style="background: var(--gray-700); color: white;">#334155</div>
+          <div class="showcase-label">--gray-700</div>
+        </div>
+        <div class="showcase-item">
+          <div class="color-box" style="background: var(--gray-600); color: white;">#475569</div>
+          <div class="showcase-label">--gray-600</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TIPOGRAFIA -->
+    <section class="showcase-section">
+      <h2 class="showcase-title">
+        <i class="fas fa-font"></i>
+        Tipografia
+      </h2>
+      <div style="color: var(--text-primary);">
+        <p style="font-size: var(--font-4xl); font-weight: var(--font-weight-extrabold);">
+          Título Extra Grande (4xl)
+        </p>
+        <p style="font-size: var(--font-3xl); font-weight: var(--font-weight-bold);">
+          Título Grande (3xl)
+        </p>
+        <p style="font-size: var(--font-2xl); font-weight: var(--font-weight-semibold);">
+          Título Médio (2xl)
+        </p>
+        <p style="font-size: var(--font-xl);">
+          Título Pequeno (xl)
+        </p>
+        <p style="font-size: var(--font-lg);">
+          Texto Grande (lg)
+        </p>
+        <p style="font-size: var(--font-base);">
+          Texto Normal (base)
+        </p>
+        <p style="font-size: var(--font-sm); color: var(--text-secondary);">
+          Texto Pequeno (sm)
+        </p>
+        <p style="font-size: var(--font-xs); color: var(--text-tertiary);">
+          Texto Extra Pequeno (xs)
+        </p>
+      </div>
+    </section>
+
+    <!-- INTERATIVO -->
+    <section class="showcase-section">
+      <h2 class="showcase-title">
+        <i class="fas fa-mouse-pointer"></i>
+        Elementos Interativos
+      </h2>
+      
+      <h3 style="margin-bottom: var(--spacing-4);">Toast (clique para testar)</h3>
+      <div style="display: flex; gap: var(--spacing-3); flex-wrap: wrap;">
+        <button class="btn btn-success" onclick="toast.success('Operação realizada com sucesso!')">
+          <i class="fas fa-check"></i> Toast Success
+        </button>
+        <button class="btn btn-danger" onclick="toast.error('Ocorreu um erro ao processar!')">
+          <i class="fas fa-times"></i> Toast Error
+        </button>
+        <button class="btn btn-warning" onclick="toast.warning('Atenção: verifique os dados!')">
+          <i class="fas fa-exclamation-triangle"></i> Toast Warning
+        </button>
+        <button class="btn btn-info" onclick="toast.info('Nova atualização disponível')">
+          <i class="fas fa-info-circle"></i> Toast Info
+        </button>
+      </div>
+
+      <h3 style="margin: var(--spacing-6) 0 var(--spacing-4);">Modal (clique para testar)</h3>
+      <div style="display: flex; gap: var(--spacing-3); flex-wrap: wrap;">
+        <button class="btn btn-primary" onclick="openDemoModal()">
+          <i class="fas fa-window-maximize"></i> Abrir Modal
+        </button>
+        <button class="btn btn-warning" onclick="testConfirm()">
+          <i class="fas fa-question-circle"></i> Confirmar Ação
+        </button>
+        <button class="btn btn-info" onclick="testLoading()">
+          <i class="fas fa-spinner"></i> Loading Modal
+        </button>
+      </div>
+    </section>
+
+    <!-- UTILITÁRIOS -->
+    <section class="showcase-section">
+      <h2 class="showcase-title">
+        <i class="fas fa-code"></i>
+        Classes Utilitárias
+      </h2>
+      <div style="font-family: var(--font-mono); font-size: var(--font-sm); color: var(--text-secondary);">
+        <p>.hidden - display: none</p>
+        <p>.flex - display: flex</p>
+        <p>.flex-col - flex-direction: column</p>
+        <p>.items-center - align-items: center</p>
+        <p>.justify-center - justify-content: center</p>
+        <p>.gap-2 - gap: 8px</p>
+        <p>.gap-4 - gap: 16px</p>
+        <p>.text-center - text-align: center</p>
+        <p>.font-bold - font-weight: 700</p>
+        <p>.pointer - cursor: pointer</p>
+      </div>
+    </section>
+  </div>
+
+  <!-- Modal Demo -->
+  <div id="demo-modal" class="modal modal-md">
+    <div class="modal-backdrop"></div>
+    <div class="modal-container">
+      <div class="modal-header">
+        <h2 class="modal-title">
+          <i class="fas fa-rocket"></i>
+          Modal de Demonstração
+        </h2>
+        <button class="modal-close"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <p>Este é um modal de exemplo usando o sistema modular!</p>
+        <p style="color: var(--text-secondary); margin-top: var(--spacing-4);">
+          Você pode fechar clicando no X, no backdrop, ou pressionando ESC.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="modalManager.close('demo-modal')">
+          Fechar
+        </button>
+        <button class="btn btn-primary" onclick="toast.success('Botão clicado!'); modalManager.close('demo-modal')">
+          Confirmar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/toast.js"></script>
+  <script src="js/modalManager.js"></script>
+  
+  <script>
+    function openDemoModal() {
+      modalManager.open('demo-modal');
+    }
+
+    async function testConfirm() {
+      const confirmed = await modalManager.confirm({
+        title: 'Confirmar ação',
+        message: 'Deseja realmente executar esta ação?',
+        confirmText: 'Sim, confirmar',
+        cancelText: 'Cancelar',
+        type: 'warning'
+      });
+
+      if (confirmed) {
+        toast.success('Ação confirmada!');
+      } else {
+        toast.info('Ação cancelada');
+      }
+    }
+
+    function testLoading() {
+      modalManager.showLoading('Processando dados...');
+      
+      setTimeout(() => {
+        modalManager.hideLoading();
+        toast.success('Processamento concluído!');
+      }, 3000);
+    }
+
+    // Inicializar
+    console.log('🎨 Guia de Componentes carregado!');
+  </script>
+</body>
+</html>

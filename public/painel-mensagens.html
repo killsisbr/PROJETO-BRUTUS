@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+  <title>Painel de Mensagens</title>
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/modals.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body {
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      padding: var(--spacing-6);
+      min-height: 100vh;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--spacing-6);
+      padding-bottom: var(--spacing-4);
+      border-bottom: 1px solid var(--border-default);
+    }
+    
+    .page-title {
+      font-size: var(--font-2xl);
+      font-weight: var(--font-weight-bold);
+      background: var(--gradient-glow);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .toolbar {
+      display: flex;
+      gap: var(--spacing-3);
+      margin-bottom: var(--spacing-6);
+      flex-wrap: wrap;
+    }
+    
+    .search-box {
+      flex: 1;
+      min-width: 250px;
+    }
+    
+    .stats-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: var(--spacing-4);
+      margin-bottom: var(--spacing-6);
+    }
+    
+    .messages-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+      gap: var(--spacing-4);
+    }
+    
+    .message-card {
+      background: var(--surface-elevated);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-xl);
+      padding: var(--spacing-5);
+      transition: all var(--transition-base);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .message-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-xl);
+      border-color: var(--border-strong);
+    }
+    
+    .message-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: var(--spacing-3);
+    }
+    
+    .message-title {
+      font-size: var(--font-lg);
+      font-weight: var(--font-weight-semibold);
+      color: var(--text-primary);
+      margin: 0;
+      flex: 1;
+    }
+    
+    .message-key {
+      font-size: var(--font-xs);
+      color: var(--text-tertiary);
+      background: var(--surface-base);
+      padding: var(--spacing-1) var(--spacing-2);
+      border-radius: var(--radius-md);
+      margin-top: var(--spacing-1);
+      display: inline-block;
+    }
+    
+    .message-content {
+      color: var(--text-secondary);
+      font-size: var(--font-sm);
+      margin: var(--spacing-3) 0;
+      line-height: 1.5;
+      max-height: 120px;
+      overflow: hidden;
+      position: relative;
+    }
+    
+    .message-content::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 30px;
+      background: linear-gradient(transparent, var(--surface-elevated));
+    }
+    
+    .message-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: var(--spacing-4);
+      padding-top: var(--spacing-4);
+      border-top: 1px solid var(--border-subtle);
+    }
+    
+    .message-type {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--spacing-2);
+      padding: var(--spacing-1) var(--spacing-3);
+      border-radius: var(--radius-full);
+      font-size: var(--font-xs);
+      font-weight: var(--font-weight-medium);
+    }
+    
+    .type-texto {
+      background: rgba(99, 102, 241, 0.1);
+      color: var(--primary-400);
+      border: 1px solid rgba(99, 102, 241, 0.2);
+    }
+    
+    .type-menu {
+      background: rgba(34, 197, 94, 0.1);
+      color: var(--success-400);
+      border: 1px solid rgba(34, 197, 94, 0.2);
+    }
+    
+    .type-confirmacao {
+      background: rgba(251, 191, 36, 0.1);
+      color: var(--warning-400);
+      border: 1px solid rgba(251, 191, 36, 0.2);
+    }
+    
+    .empty-state {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: var(--spacing-12);
+      color: var(--text-tertiary);
+    }
+    
+    .empty-state i {
+      font-size: var(--font-4xl);
+      margin-bottom: var(--spacing-4);
+      opacity: 0.3;
+    }
+    
+    .empty-state h3 {
+      font-size: var(--font-xl);
+      margin-bottom: var(--spacing-2);
+      color: var(--text-secondary);
+    }
+    
+    /* Modal específico */
+    #editor-modal {
+      display: none;
+    }
+    
+    #editor-modal.active {
+      display: flex;
+    }
+    
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--spacing-4);
+    }
+    
+    .form-full {
+      grid-column: 1 / -1;
+    }
+    
+    /* Fluxo de mensagens */
+    .fluxo-container {
+      margin-top: var(--spacing-6);
+      padding: var(--spacing-6);
+      background: var(--surface-elevated);
+      border-radius: var(--radius-2xl);
+      border: 1px solid var(--border-default);
+    }
+    
+    .fluxo-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--spacing-4);
+    }
+    
+    .fluxo-steps {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-3);
+    }
+    
+    .fluxo-step {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-3);
+      padding: var(--spacing-3);
+      background: var(--surface-base);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-subtle);
+    }
+    
+    .step-number {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--primary-500);
+      color: var(--text-primary);
+      font-weight: var(--font-weight-bold);
+    }
+    
+    .step-content {
+      flex: 1;
+    }
+    
+    .step-title {
+      font-weight: var(--font-weight-semibold);
+      color: var(--text-primary);
+      margin-bottom: var(--spacing-1);
+    }
+    
+    .step-description {
+      font-size: var(--font-sm);
+      color: var(--text-secondary);
+    }
+    
+    @media (max-width: 768px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .messages-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      body {
+        padding: var(--spacing-4);
+      }
+      
+      header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-3);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1 class="page-title">Painel de Mensagens</h1>
+      <div class="toolbar">
+        <button id="btn-refresh" class="btn btn-secondary btn-icon">
+          <i class="fas fa-sync-alt"></i>
+        </button>
+        <button id="btn-new" class="btn btn-primary">
+          <i class="fas fa-plus"></i> Nova Mensagem
+        </button>
+      </div>
+    </header>
+
+    <div class="stats-container">
+      <div class="dashboard-card">
+        <div class="dashboard-card-icon">
+          <i class="fas fa-comment"></i>
+        </div>
+        <div class="dashboard-card-value" id="total-mensagens">0</div>
+        <div class="dashboard-card-label">Total de Mensagens</div>
+      </div>
+      
+      <div class="dashboard-card">
+        <div class="dashboard-card-icon">
+          <i class="fas fa-font"></i>
+        </div>
+        <div class="dashboard-card-value" id="mensagens-texto">0</div>
+        <div class="dashboard-card-label">Mensagens de Texto</div>
+      </div>
+      
+      <div class="dashboard-card">
+        <div class="dashboard-card-icon">
+          <i class="fas fa-list"></i>
+        </div>
+        <div class="dashboard-card-value" id="mensagens-menu">0</div>
+        <div class="dashboard-card-label">Menus</div>
+      </div>
+      
+      <div class="dashboard-card">
+        <div class="dashboard-card-icon">
+          <i class="fas fa-check-circle"></i>
+        </div>
+        <div class="dashboard-card-value" id="mensagens-confirmacao">0</div>
+        <div class="dashboard-card-label">Confirmações</div>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <div class="search-box">
+        <input type="text" id="search-input" class="input" placeholder="Buscar mensagens...">
+      </div>
+      <div class="toolbar-actions">
+        <select id="filter-tipo" class="select">
+          <option value="">Todos os tipos</option>
+          <option value="texto">Texto</option>
+          <option value="menu">Menu</option>
+          <option value="confirmacao">Confirmação</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="list-area">
+      <div class="messages-grid" id="mensagens-container">
+        <!-- Mensagens serão inseridas aqui dinamicamente -->
+        <div class="empty-state">
+          <i class="fas fa-inbox"></i>
+          <h3>Nenhuma mensagem encontrada</h3>
+          <p>Crie sua primeira mensagem clicando no botão "Nova Mensagem"</p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Seção de Fluxo de Mensagens -->
+    <div class="fluxo-container">
+      <div class="fluxo-header">
+        <h2 class="page-title">Fluxo de Mensagens</h2>
+        <button id="btn-edit-fluxo" class="btn btn-primary">
+          <i class="fas fa-edit"></i> Editar Fluxo
+        </button>
+      </div>
+      
+      <div class="fluxo-steps" id="fluxo-steps">
+        <div class="fluxo-step">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <div class="step-title">Boas-vindas</div>
+            <div class="step-description">Mensagem inicial quando o cliente inicia a conversa</div>
+          </div>
+        </div>
+        
+        <div class="fluxo-step">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <div class="step-title">Menu Principal</div>
+            <div class="step-description">Opções disponíveis para o cliente</div>
+          </div>
+        </div>
+        
+        <div class="fluxo-step">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <div class="step-title">Processo de Pedido</div>
+            <div class="step-description">Fluxo para coleta de informações do pedido</div>
+          </div>
+        </div>
+        
+        <div class="fluxo-step">
+          <div class="step-number">4</div>
+          <div class="step-content">
+            <div class="step-title">Confirmação</div>
+            <div class="step-description">Confirmação final do pedido</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Edição -->
+  <div id="editor-modal" class="modal">
+    <div class="modal-backdrop" data-action="close"></div>
+    <div class="modal-container">
+      <div class="modal-header">
+        <h2 class="modal-title" id="editor-title">
+          <i class="fas fa-edit"></i> Nova Mensagem
+        </h2>
+        <button class="modal-close" data-action="close">&times;</button>
+      </div>
+      
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="form-full">
+            <label class="input-label">Chave (única)</label>
+            <input id="msg-chave" type="text" class="input" placeholder="Ex: msgBoasVindas">
+          </div>
+          
+          <div class="form-full">
+            <label class="input-label">Título</label>
+            <input id="msg-titulo" type="text" class="input" placeholder="Título da mensagem">
+          </div>
+          
+          <div class="form-full">
+            <label class="input-label">Tipo</label>
+            <select id="msg-tipo" class="select">
+              <option value="texto">Texto</option>
+              <option value="menu">Menu</option>
+              <option value="confirmacao">Confirmação</option>
+            </select>
+          </div>
+          
+          <div class="form-full">
+            <label class="input-label">Conteúdo</label>
+            <textarea id="msg-conteudo" class="textarea" placeholder="Conteúdo da mensagem..."></textarea>
+          </div>
+        </div>
+      </div>
+      
+      <div class="modal-footer">
+        <button id="editor-cancel" class="btn btn-secondary" data-action="close">
+          Cancelar
+        </button>
+        <button id="editor-save" class="btn btn-primary">
+          <i class="fas fa-save"></i> Salvar Mensagem
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="js/painel-mensagens.js"></script>
+</body>
+</html>

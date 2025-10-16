@@ -1,0 +1,978 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+  <title>Gerenciamento do Banco de Dados</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --primary: #667eea;
+      --secondary: #764ba2;
+      --success: #10b981;
+      --info: #3b82f6;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --dark: #1e293b;
+      --light: #f8fafc;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+      min-height: 100vh;
+      color: #fff;
+      padding: 20px;
+    }
+    
+    .container {
+      max-width: 1400px;
+      width: 100%;
+      margin: 0 auto;
+    }
+    
+    header {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+    
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    
+    h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin: 0;
+    }
+    
+    .header-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      color: white;
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      min-width: 44px;
+      min-height: 44px;
+    }
+    
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+      background: rgba(255, 255, 255, 0.25);
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+    }
+    
+    .btn-success {
+      background: linear-gradient(135deg, var(--success), #059669);
+    }
+    
+    .btn-info {
+      background: linear-gradient(135deg, var(--info), #1d4ed8);
+    }
+    
+    .btn-warning {
+      background: linear-gradient(135deg, var(--warning), #d97706);
+    }
+    
+    .btn-danger {
+      background: linear-gradient(135deg, var(--danger), #dc2626);
+    }
+    
+    .stats-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    
+    .stat-card {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      transition: transform 0.3s ease;
+    }
+    
+    .stat-card:hover {
+      transform: translateY(-5px);
+    }
+    
+    .stat-card i {
+      font-size: 2rem;
+      margin-bottom: 15px;
+      display: block;
+    }
+    
+    .stat-card .value {
+      font-size: 2rem;
+      font-weight: 700;
+      margin: 10px 0;
+    }
+    
+    .stat-card .label {
+      font-size: 1rem;
+      opacity: 0.9;
+    }
+    
+    .tabs {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    
+    .tab {
+      padding: 12px 24px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px 8px 0 0;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+    
+    .tab.active {
+      background: rgba(255, 255, 255, 0.25);
+      border-bottom: none;
+    }
+    
+    .tab-content {
+      display: none;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 0 12px 12px 12px;
+      padding: 25px;
+      min-height: 400px;
+    }
+    
+    .tab-content.active {
+      display: block;
+    }
+    
+    .search-box {
+      position: relative;
+      margin-bottom: 20px;
+    }
+    
+    .search-box input {
+      width: 100%;
+      padding: 14px 20px 14px 45px;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      font-size: 16px;
+    }
+    
+    .search-box input:focus {
+      outline: none;
+      border-color: var(--primary);
+      background: rgba(255, 255, 255, 0.15);
+    }
+    
+    .search-box i {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 18px;
+    }
+    
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    
+    .data-table th,
+    .data-table td {
+      padding: 12px 15px;
+      text-align: left;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .data-table th {
+      background: rgba(255, 255, 255, 0.15);
+      font-weight: 600;
+      position: sticky;
+      top: 0;
+    }
+    
+    .data-table tbody tr:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+    
+    .data-table .actions {
+      display: flex;
+      gap: 8px;
+    }
+    
+    .btn-small {
+      padding: 6px 12px;
+      font-size: 14px;
+      min-width: auto;
+      min-height: auto;
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: white;
+    }
+    
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      font-size: 16px;
+    }
+    
+    .form-group input:focus,
+    .form-group textarea:focus,
+    .form-group select:focus {
+      outline: none;
+      border-color: var(--primary);
+      background: rgba(255, 255, 255, 0.15);
+    }
+    
+    .form-actions {
+      display: flex;
+      gap: 15px;
+      justify-content: flex-end;
+      margin-top: 30px;
+    }
+    
+    .empty-message {
+      text-align: center;
+      padding: 40px 20px;
+      color: rgba(255, 255, 255, 0.7);
+      font-style: italic;
+    }
+    
+    .error-message {
+      text-align: center;
+      padding: 20px;
+      color: var(--danger);
+      background: rgba(239, 68, 68, 0.1);
+      border-radius: 8px;
+      margin: 20px 0;
+    }
+    
+    .success-message {
+      text-align: center;
+      padding: 20px;
+      color: var(--success);
+      background: rgba(16, 185, 129, 0.1);
+      border-radius: 8px;
+      margin: 20px 0;
+    }
+    
+    .pagination {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    
+    .pagination button {
+      padding: 8px 16px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 6px;
+      color: white;
+      cursor: pointer;
+    }
+    
+    .pagination button.active {
+      background: var(--primary);
+    }
+    
+    .pagination button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+    
+    .modal.active {
+      opacity: 1;
+      visibility: visible;
+    }
+    
+    .modal-content {
+      background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+      border-radius: 12px;
+      padding: 30px;
+      width: 90%;
+      max-width: 600px;
+      max-height: 90vh;
+      overflow-y: auto;
+      transform: translateY(-50px);
+      transition: transform 0.3s ease;
+    }
+    
+    .modal.active .modal-content {
+      transform: translateY(0);
+    }
+    
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    
+    .modal-header h2 {
+      margin: 0;
+      font-size: 1.5rem;
+    }
+    
+    .modal-close {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 2rem;
+      cursor: pointer;
+      padding: 0;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .modal-close:hover {
+      color: var(--danger);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="header-top">
+        <h1><i class="fas fa-database"></i> Gerenciamento do Banco de Dados</h1>
+        <div class="header-actions">
+          <button class="btn btn-primary" id="btnRefresh">
+            <i class="fas fa-sync-alt"></i> Atualizar
+          </button>
+          <button class="btn btn-info" id="btnBackup">
+            <i class="fas fa-download"></i> Backup
+          </button>
+          <button class="btn btn-warning" id="btnVoltar">
+            <i class="fas fa-arrow-left"></i> Voltar
+          </button>
+        </div>
+      </div>
+      
+      <div class="stats-cards">
+        <div class="stat-card">
+          <i class="fas fa-users"></i>
+          <div class="value" id="totalClientes">0</div>
+          <div class="label">Clientes</div>
+        </div>
+        <div class="stat-card">
+          <i class="fas fa-receipt"></i>
+          <div class="value" id="totalPedidos">0</div>
+          <div class="label">Pedidos</div>
+        </div>
+        <div class="stat-card">
+          <i class="fas fa-file-invoice-dollar"></i>
+          <div class="value" id="valorTotal">R$ 0,00</div>
+          <div class="label">Valor Total</div>
+        </div>
+        <div class="stat-card">
+          <i class="fas fa-database"></i>
+          <div class="value" id="tamanhoBanco">0 MB</div>
+          <div class="label">Tamanho do Banco</div>
+        </div>
+      </div>
+    </header>
+    
+    <main>
+      <div class="tabs">
+        <div class="tab active" data-tab="clientes">Clientes</div>
+        <div class="tab" data-tab="pedidos">Pedidos</div>
+        <div class="tab" data-tab="estatisticas">Estatísticas</div>
+      </div>
+      
+      <div class="tab-content active" id="tab-clientes">
+        <div class="search-box">
+          <i class="fas fa-search"></i>
+          <input type="text" id="searchClientes" placeholder="Buscar clientes...">
+        </div>
+        
+        <div class="actions">
+          <button class="btn btn-success" id="btnNovoCliente">
+            <i class="fas fa-plus"></i> Novo Cliente
+          </button>
+        </div>
+        
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Telefone</th>
+              <th>Endereço</th>
+              <th>Total Gasto</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="clientesTableBody">
+            <tr>
+              <td colspan="5" class="empty-message">Carregando clientes...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <div class="tab-content" id="tab-pedidos">
+        <div class="search-box">
+          <i class="fas fa-search"></i>
+          <input type="text" id="searchPedidos" placeholder="Buscar pedidos...">
+        </div>
+        
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Cliente</th>
+              <th>Data</th>
+              <th>Total</th>
+              <th>Entrega</th>
+              <th>Estado</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="pedidosTableBody">
+            <tr>
+              <td colspan="7" class="empty-message">Carregando pedidos...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <div class="tab-content" id="tab-estatisticas">
+        <div class="stats-cards">
+          <div class="stat-card">
+            <i class="fas fa-chart-line"></i>
+            <div class="value" id="mediaPedidosDia">0</div>
+            <div class="label">Média de Pedidos/Dia</div>
+          </div>
+          <div class="stat-card">
+            <i class="fas fa-ticket-alt"></i>
+            <div class="value" id="ticketMedio">R$ 0,00</div>
+            <div class="label">Ticket Médio</div>
+          </div>
+          <div class="stat-card">
+            <i class="fas fa-calendar-alt"></i>
+            <div class="value" id="pedidosHoje">0</div>
+            <div class="label">Pedidos Hoje</div>
+          </div>
+          <div class="stat-card">
+            <i class="fas fa-calendar-check"></i>
+            <div class="value" id="pedidosMes">0</div>
+            <div class="label">Pedidos Este Mês</div>
+          </div>
+        </div>
+        
+        <div class="chart-container">
+          <h3><i class="fas fa-chart-bar"></i> Pedidos por Dia (Últimos 7 dias)</h3>
+          <canvas id="chartPedidos" width="400" height="200"></canvas>
+        </div>
+      </div>
+    </main>
+  </div>
+  
+  <!-- Modal para edição de cliente -->
+  <div class="modal" id="modalCliente">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modalClienteTitle">Editar Cliente</h2>
+        <button class="modal-close">&times;</button>
+      </div>
+      <form id="formCliente">
+        <input type="hidden" id="clienteId">
+        <div class="form-group">
+          <label for="clienteNome">Nome:</label>
+          <input type="text" id="clienteNome" required>
+        </div>
+        <div class="form-group">
+          <label for="clienteTelefone">Telefone:</label>
+          <input type="text" id="clienteTelefone" required>
+        </div>
+        <div class="form-group">
+          <label for="clienteEndereco">Endereço:</label>
+          <textarea id="clienteEndereco" rows="3"></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="clienteLat">Latitude:</label>
+            <input type="number" id="clienteLat" step="any">
+          </div>
+          <div class="form-group">
+            <label for="clienteLng">Longitude:</label>
+            <input type="number" id="clienteLng" step="any">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="clienteTotalGasto">Total Gasto:</label>
+          <input type="number" id="clienteTotalGasto" step="0.01" readonly>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" id="btnCancelarCliente">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
+  <!-- Modal para visualização de pedido -->
+  <div class="modal" id="modalPedido">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Detalhes do Pedido</h2>
+        <button class="modal-close">&times;</button>
+      </div>
+      <div id="pedidoDetalhes">
+        <!-- Detalhes do pedido serão carregados aqui -->
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // Elementos DOM
+    const tabs = document.querySelectorAll('.tab');
+    const tabContents = document.querySelectorAll('.tab-content');
+    const btnRefresh = document.getElementById('btnRefresh');
+    const btnBackup = document.getElementById('btnBackup');
+    const btnVoltar = document.getElementById('btnVoltar');
+    const btnNovoCliente = document.getElementById('btnNovoCliente');
+    const searchClientes = document.getElementById('searchClientes');
+    const searchPedidos = document.getElementById('searchPedidos');
+    const modalCliente = document.getElementById('modalCliente');
+    const modalPedido = document.getElementById('modalPedido');
+    const modalCloseButtons = document.querySelectorAll('.modal-close');
+    const formCliente = document.getElementById('formCliente');
+    const btnCancelarCliente = document.getElementById('btnCancelarCliente');
+    
+    // Dados em memória
+    let clientesData = [];
+    let pedidosData = [];
+    let estatisticasData = {};
+    
+    // Inicialização
+    document.addEventListener('DOMContentLoaded', () => {
+      loadAllData();
+      setupEventListeners();
+    });
+    
+    // Função para carregar todos os dados
+    async function loadAllData() {
+      try {
+        await Promise.all([
+          loadClientes(),
+          loadPedidos(),
+          loadEstatisticas()
+        ]);
+        updateStats();
+      } catch (error) {
+        console.error('Erro ao carregar dados:', error);
+        showMessage('Erro ao carregar dados', 'error');
+      }
+    }
+    
+    // Função para carregar clientes
+    async function loadClientes() {
+      try {
+        const response = await fetch('/api/clientes');
+        const data = await response.json();
+        
+        if (data.ok) {
+          clientesData = data.clientes || [];
+          renderClientesTable();
+        } else {
+          throw new Error(data.error || 'Erro ao carregar clientes');
+        }
+      } catch (error) {
+        console.error('Erro ao carregar clientes:', error);
+        document.getElementById('clientesTableBody').innerHTML = 
+          '<tr><td colspan="5" class="error-message">Erro ao carregar clientes</td></tr>';
+      }
+    }
+    
+    // Função para carregar pedidos
+    async function loadPedidos() {
+      try {
+        const response = await fetch('/api/pedidos');
+        const data = await response.json();
+        
+        if (data.ok) {
+          pedidosData = data.pedidos || [];
+          renderPedidosTable();
+        } else {
+          throw new Error(data.error || 'Erro ao carregar pedidos');
+        }
+      } catch (error) {
+        console.error('Erro ao carregar pedidos:', error);
+        document.getElementById('pedidosTableBody').innerHTML = 
+          '<tr><td colspan="7" class="error-message">Erro ao carregar pedidos</td></tr>';
+      }
+    }
+    
+    // Função para carregar estatísticas
+    async function loadEstatisticas() {
+      try {
+        const response = await fetch('/api/estatisticas');
+        const data = await response.json();
+        
+        if (data) {
+          estatisticasData = data;
+        }
+      } catch (error) {
+        console.error('Erro ao carregar estatísticas:', error);
+      }
+    }
+    
+    // Função para atualizar as estatísticas
+    function updateStats() {
+      document.getElementById('totalClientes').textContent = clientesData.length;
+      document.getElementById('totalPedidos').textContent = pedidosData.length;
+      
+      // Calcular valor total dos pedidos
+      const valorTotal = pedidosData.reduce((sum, pedido) => sum + (parseFloat(pedido.total) || 0), 0);
+      document.getElementById('valorTotal').textContent = `R$ ${valorTotal.toFixed(2).replace('.', ',')}`;
+      
+      // Atualizar estatísticas
+      if (estatisticasData) {
+        document.getElementById('mediaPedidosDia').textContent = estatisticasData.mediaPedidosDia || 0;
+        document.getElementById('ticketMedio').textContent = `R$ ${(estatisticasData.ticketMedio || 0).toFixed(2).replace('.', ',')}`;
+        document.getElementById('pedidosHoje').textContent = estatisticasData.pedidosHoje || 0;
+        document.getElementById('pedidosMes').textContent = estatisticasData.pedidosMes || 0;
+      }
+    }
+    
+    // Função para renderizar a tabela de clientes
+    function renderClientesTable() {
+      const tbody = document.getElementById('clientesTableBody');
+      const searchTerm = searchClientes.value.toLowerCase();
+      
+      const clientesFiltrados = clientesData.filter(cliente => 
+        (cliente.nome && cliente.nome.toLowerCase().includes(searchTerm)) ||
+        (cliente.numero && cliente.numero.includes(searchTerm)) ||
+        (cliente.endereco && cliente.endereco.toLowerCase().includes(searchTerm))
+      );
+      
+      if (clientesFiltrados.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="empty-message">Nenhum cliente encontrado</td></tr>';
+        return;
+      }
+      
+      tbody.innerHTML = clientesFiltrados.map(cliente => `
+        <tr>
+          <td>${cliente.nome || 'Sem nome'}</td>
+          <td>${cliente.numero || ''}</td>
+          <td>${cliente.endereco || ''}</td>
+          <td>R$ ${(parseFloat(cliente.total_gasto) || 0).toFixed(2).replace('.', ',')}</td>
+          <td class="actions">
+            <button class="btn btn-primary btn-small editar-cliente" data-id="${cliente.numero}">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn btn-danger btn-small excluir-cliente" data-id="${cliente.numero}">
+              <i class="fas fa-trash"></i>
+            </button>
+          </td>
+        </tr>
+      `).join('');
+      
+      // Adicionar event listeners aos botões
+      document.querySelectorAll('.editar-cliente').forEach(btn => {
+        btn.addEventListener('click', () => editarCliente(btn.dataset.id));
+      });
+      
+      document.querySelectorAll('.excluir-cliente').forEach(btn => {
+        btn.addEventListener('click', () => excluirCliente(btn.dataset.id));
+      });
+    }
+    
+    // Função para renderizar a tabela de pedidos
+    function renderPedidosTable() {
+      const tbody = document.getElementById('pedidosTableBody');
+      const searchTerm = searchPedidos.value.toLowerCase();
+      
+      const pedidosFiltrados = pedidosData.filter(pedido => 
+        (pedido.id && pedido.id.toLowerCase().includes(searchTerm)) ||
+        (pedido.numero && pedido.numero.includes(searchTerm)) ||
+        (pedido.estado && pedido.estado.toLowerCase().includes(searchTerm))
+      );
+      
+      if (pedidosFiltrados.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="empty-message">Nenhum pedido encontrado</td></tr>';
+        return;
+      }
+      
+      tbody.innerHTML = pedidosFiltrados.map(pedido => {
+        const data = new Date(pedido.ts);
+        const dataFormatada = data.toLocaleDateString('pt-BR') + ' ' + data.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
+        
+        return `
+          <tr>
+            <td>${pedido.id || ''}</td>
+            <td>${pedido.numero || ''}</td>
+            <td>${dataFormatada}</td>
+            <td>R$ ${(parseFloat(pedido.total) || 0).toFixed(2).replace('.', ',')}</td>
+            <td>${pedido.entrega ? 'Sim' : 'Não'}</td>
+            <td>${pedido.estado || ''}</td>
+            <td class="actions">
+              <button class="btn btn-info btn-small ver-pedido" data-id="${pedido.id}">
+                <i class="fas fa-eye"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+      
+      // Adicionar event listeners aos botões
+      document.querySelectorAll('.ver-pedido').forEach(btn => {
+        btn.addEventListener('click', () => verPedido(btn.dataset.id));
+      });
+    }
+    
+    // Função para editar cliente
+    function editarCliente(id) {
+      const cliente = clientesData.find(c => c.numero === id);
+      if (!cliente) return;
+      
+      document.getElementById('clienteId').value = cliente.numero;
+      document.getElementById('clienteNome').value = cliente.nome || '';
+      document.getElementById('clienteTelefone').value = cliente.numero || '';
+      document.getElementById('clienteEndereco').value = cliente.endereco || '';
+      document.getElementById('clienteLat').value = cliente.latitude || '';
+      document.getElementById('clienteLng').value = cliente.longitude || '';
+      document.getElementById('clienteTotalGasto').value = (parseFloat(cliente.total_gasto) || 0).toFixed(2);
+      
+      document.getElementById('modalClienteTitle').textContent = 'Editar Cliente';
+      openModal(modalCliente);
+    }
+    
+    // Função para criar novo cliente
+    function novoCliente() {
+      document.getElementById('formCliente').reset();
+      document.getElementById('clienteId').value = '';
+      document.getElementById('clienteTotalGasto').value = '0.00';
+      document.getElementById('modalClienteTitle').textContent = 'Novo Cliente';
+      openModal(modalCliente);
+    }
+    
+    // Função para excluir cliente
+    function excluirCliente(id) {
+      if (confirm('Tem certeza que deseja excluir este cliente?')) {
+        // Implementar exclusão
+        showMessage('Cliente excluído com sucesso', 'success');
+        loadClientes();
+      }
+    }
+    
+    // Função para ver detalhes do pedido
+    function verPedido(id) {
+      const pedido = pedidosData.find(p => p.id === id);
+      if (!pedido) return;
+      
+      const data = new Date(pedido.ts);
+      const dataFormatada = data.toLocaleDateString('pt-BR') + ' ' + data.toLocaleTimeString('pt-BR');
+      
+      document.getElementById('pedidoDetalhes').innerHTML = `
+        <div class="pedido-info">
+          <h3>Pedido #${pedido.id}</h3>
+          <p><strong>Cliente:</strong> ${pedido.numero}</p>
+          <p><strong>Data:</strong> ${dataFormatada}</p>
+          <p><strong>Total:</strong> R$ ${(parseFloat(pedido.total) || 0).toFixed(2).replace('.', ',')}</p>
+          <p><strong>Entrega:</strong> ${pedido.entrega ? 'Sim' : 'Não'}</p>
+          <p><strong>Estado:</strong> ${pedido.estado || ''}</p>
+          ${pedido.endereco ? `<p><strong>Endereço:</strong> ${pedido.endereco}</p>` : ''}
+          <h4>Itens:</h4>
+          <ul>
+            ${(pedido.items || []).map(item => 
+              `<li>${item.quantidade}x ${item.nome} - R$ ${(parseFloat(item.preco) * parseInt(item.quantidade)).toFixed(2).replace('.', ',')}</li>`
+            ).join('')}
+          </ul>
+        </div>
+      `;
+      
+      openModal(modalPedido);
+    }
+    
+    // Função para salvar cliente
+    async function salvarCliente(event) {
+      event.preventDefault();
+      
+      const id = document.getElementById('clienteId').value;
+      const nome = document.getElementById('clienteNome').value;
+      const telefone = document.getElementById('clienteTelefone').value;
+      const endereco = document.getElementById('clienteEndereco').value;
+      const lat = document.getElementById('clienteLat').value;
+      const lng = document.getElementById('clienteLng').value;
+      
+      try {
+        const response = await fetch(`/api/clientes/${telefone}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ nome, endereco, lat: lat || null, lng: lng || null })
+        });
+        
+        const data = await response.json();
+        
+        if (data.ok) {
+          showMessage('Cliente salvo com sucesso', 'success');
+          closeModal(modalCliente);
+          loadClientes();
+        } else {
+          throw new Error(data.error || 'Erro ao salvar cliente');
+        }
+      } catch (error) {
+        console.error('Erro ao salvar cliente:', error);
+        showMessage('Erro ao salvar cliente: ' + error.message, 'error');
+      }
+    }
+    
+    // Função para abrir modal
+    function openModal(modal) {
+      modal.classList.add('active');
+    }
+    
+    // Função para fechar modal
+    function closeModal(modal) {
+      modal.classList.remove('active');
+    }
+    
+    // Função para mostrar mensagem
+    function showMessage(message, type) {
+      // Implementar sistema de mensagens
+      alert(message);
+    }
+    
+    // Função para configurar event listeners
+    function setupEventListeners() {
+      // Tabs
+      tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          const tabName = tab.dataset.tab;
+          
+          // Atualizar tabs ativas
+          tabs.forEach(t => t.classList.remove('active'));
+          tabContents.forEach(c => c.classList.remove('active'));
+          
+          tab.classList.add('active');
+          document.getElementById(`tab-${tabName}`).classList.add('active');
+        });
+      });
+      
+      // Botões de ação
+      btnRefresh.addEventListener('click', loadAllData);
+      btnBackup.addEventListener('click', () => {
+        showMessage('Funcionalidade de backup em desenvolvimento', 'info');
+      });
+      btnVoltar.addEventListener('click', () => {
+        window.location.href = '/pedidos.html';
+      });
+      btnNovoCliente.addEventListener('click', novoCliente);
+      
+      // Busca
+      searchClientes.addEventListener('input', renderClientesTable);
+      searchPedidos.addEventListener('input', renderPedidosTable);
+      
+      // Modal
+      modalCloseButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          closeModal(modalCliente);
+          closeModal(modalPedido);
+        });
+      });
+      
+      // Formulário
+      formCliente.addEventListener('submit', salvarCliente);
+      btnCancelarCliente.addEventListener('click', () => closeModal(modalCliente));
+      
+      // Fechar modal ao clicar fora
+      document.querySelectorAll('.modal').forEach(modal => {
+        modal.addEventListener('click', (e) => {
+          if (e.target === modal) {
+            closeModal(modal);
+          }
+        });
+      });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,955 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+  <title>Painel de Pedidos</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --primary: #8A2BE2;
+      --secondary: #4B0082;
+      --success: #32CD32;
+      --info: #00BFFF;
+      --warning: #FFD700;
+      --danger: #FF4500;
+      --dark: #121212;
+      --darker: #0a0a0a;
+      --light: #f8f9fa;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, var(--darker) 0%, var(--dark) 100%);
+      min-height: 100vh;
+      color: #fff;
+      padding: 15px;
+    }
+    
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    
+    /* Cabeçalho slim reimaginado */
+    header {
+      background: rgba(30, 30, 46, 0.85);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(138, 43, 226, 0.3);
+      border-radius: 14px;
+      padding: 12px 15px;
+      margin-bottom: 20px;
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+    }
+    
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .logo-icon {
+      font-size: 1.6rem;
+      color: var(--primary);
+      background: rgba(138, 43, 226, 0.2);
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    h1 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      margin: 0;
+      color: var(--light);
+    }
+    
+    .header-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 12px;
+      border: none;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      color: white;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+      background: rgba(255, 255, 255, 0.2);
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      border: 1px solid rgba(138, 43, 226, 0.4);
+    }
+    
+    .btn-success {
+      background: linear-gradient(135deg, var(--success), #228B22);
+      border: 1px solid rgba(50, 205, 50, 0.4);
+    }
+    
+    .btn-info {
+      background: linear-gradient(135deg, var(--info), #1E90FF);
+      border: 1px solid rgba(0, 191, 255, 0.4);
+    }
+    
+    .btn-warning {
+      background: linear-gradient(135deg, var(--warning), #FFA500);
+      border: 1px solid rgba(255, 215, 0, 0.4);
+      color: var(--dark);
+    }
+    
+    .btn-danger {
+      background: linear-gradient(135deg, var(--danger), #FF6347);
+      border: 1px solid rgba(255, 69, 0, 0.4);
+    }
+    
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+    
+    /* Legenda slim */
+    .legend {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding: 10px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      margin-top: 15px;
+    }
+    
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.8rem;
+    }
+    
+    .legend-color {
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      display: inline-block;
+    }
+    
+    main {
+      margin-bottom: 25px;
+    }
+    
+    #lista {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 15px;
+    }
+    
+    /* Estilos para o popup do QR Code */
+    .popup-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 3000;
+      backdrop-filter: blur(5px);
+    }
+    
+    .popup-content {
+      background: rgba(30, 30, 46, 0.9);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(138, 43, 226, 0.5);
+      color: #fff;
+      width: 90%;
+      max-width: 450px;
+      border-radius: 14px;
+      padding: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+      position: relative;
+    }
+    
+    .popup-close {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: none;
+      border: none;
+      color: white;
+      font-size: 20px;
+      cursor: pointer;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      transition: background 0.3s;
+    }
+    
+    .popup-close:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+    
+    .qr-code-container {
+      margin: 15px 0;
+      background: white;
+      padding: 12px;
+      border-radius: 10px;
+      display: inline-block;
+    }
+    
+    .qr-code {
+      width: 220px;
+      height: 220px;
+      display: block;
+    }
+    
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin: 12px 0;
+      padding: 10px;
+      border-radius: 8px;
+      font-weight: 500;
+      font-size: 0.9rem;
+    }
+    
+    .status-connecting {
+      background: rgba(255, 215, 0, 0.15);
+      color: var(--warning);
+      border: 1px solid rgba(255, 215, 0, 0.3);
+    }
+    
+    .status-connected {
+      background: rgba(50, 205, 50, 0.15);
+      color: var(--success);
+      border: 1px solid rgba(50, 205, 50, 0.3);
+    }
+    
+    .status-error {
+      background: rgba(255, 69, 0, 0.15);
+      color: var(--danger);
+      border: 1px solid rgba(255, 69, 0, 0.3);
+    }
+    
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+    
+    .status-dot.connecting {
+      animation: pulse 1.5s infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    
+    .hidden {
+      display: none;
+    }
+    
+    /* Responsividade */
+    @media (max-width: 992px) {
+      #lista {
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      }
+    }
+    
+    @media (max-width: 768px) {
+      .header-top {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      
+      .header-actions {
+        justify-content: center;
+      }
+      
+      #lista {
+        grid-template-columns: 1fr;
+      }
+      
+      .legend {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .btn {
+        padding: 6px 10px;
+        font-size: 12px;
+        gap: 4px;
+      }
+      
+      .btn i {
+        font-size: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="header-top">
+        <div class="logo-container">
+          <div class="logo-icon">
+            <i class="fas fa-comments-dollar"></i>
+          </div>
+          <h1>Painel de Pedidos</h1>
+        </div>
+        <div class="header-actions">
+          <button id="btn-qr-whatsapp" class="btn btn-primary" title="QR Code WhatsApp">
+            <i class="fas fa-qrcode"></i>
+          </button>
+          <button id="btn-dashboard" class="btn btn-danger" title="Dashboard">
+            <i class="fas fa-chart-line"></i>
+          </button>
+          <button id="btn-entregues" class="btn btn-secondary" title="Entregues">
+            <i class="fas fa-box-open"></i>
+          </button>
+          <button id="btn-cardapio" class="btn btn-success" title="Cardápio">
+            <i class="fas fa-utensils"></i>
+          </button>
+          <button id="btn-mensagens" class="btn btn-warning" title="Mensagens">
+            <i class="fas fa-robot"></i>
+          </button>
+          <button id="btn-novo-pedido" class="btn btn-info" title="Novo Pedido">
+            <i class="fas fa-plus"></i>
+          </button>
+        </div>
+      </div>
+      
+      <div class="legend">
+        <div class="legend-item">
+          <span class="legend-color" style="background:#f1c40f"></span>
+          <span>Pedindo</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-color" style="background:#3498db"></span>
+          <span>Endereço</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-color" style="background:#2ecc71"></span>
+          <span>Finalizado</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-color" style="background:#95a5a6"></span>
+          <span>Outros</span>
+        </div>
+      </div>
+    </header>
+    
+    <main>
+      <div id="lista"></div>
+    </main>
+  </div>
+
+  <!-- Modal: Pedidos Entregues -->
+  <div id="entregues-modal" class="modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(20px); align-items:center; justify-content:center; z-index:2500;">
+    <div style="background:rgba(30,30,46,0.9); backdrop-filter:blur(20px); border:1px solid rgba(138,43,226,0.5); color:#fff; width:800px; max-width:95%; border-radius:14px; padding:20px; box-shadow:0 20px 60px rgba(0,0,0,0.4);">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <h2 style="margin:0; font-size:18px; font-weight:600;"><i class="fas fa-box-open"></i> Pedidos Entregues / Saiu para entrega - HOJE</h2>
+        <div style="display:flex; gap:10px;">
+          <button id="entregues-refresh" class="btn btn-info">
+            <i class="fas fa-sync-alt"></i>
+          </button>
+          <button id="entregues-close" class="btn btn-secondary">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </div>
+      <div id="entregues-body" style="margin-top:15px; max-height:500px; overflow:auto; padding-top:8px;"></div>
+    </div>
+  </div>
+
+  <!-- Modal de Conversa -->
+  <div id="conversation-modal" class="modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(20px); align-items:center; justify-content:center; z-index:2000;">
+    <div id="conversation-content" style="background:rgba(30,30,46,0.9); backdrop-filter:blur(20px); border:1px solid rgba(138,43,226,0.5); color:#fff; width:700px; max-width:95%; border-radius:14px; padding:20px; box-shadow:0 20px 60px rgba(0,0,0,0.4);">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h2 id="conv-title" style="margin:0; font-size:16px; font-weight:600;"></h2>
+        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+          <button id="conv-open-wa" class="btn btn-success" title="WhatsApp">
+            <i class="fab fa-whatsapp"></i>
+          </button>
+          <button id="conv-edit-name" class="btn btn-warning" title="Editar">
+            <i class="fas fa-edit"></i>
+          </button>
+          <button id="conv-print" class="btn btn-secondary" title="Imprimir">
+            <i class="fas fa-print"></i>
+          </button>
+          <button id="conv-close" class="btn btn-secondary" title="Fechar">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </div>
+      <div id="conv-body" style="margin-top:15px; display:grid; grid-template-columns:1fr 340px; gap:14px;">
+        <div id="conv-messages" style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:10px; padding:14px; max-height:380px; overflow:auto;"></div>
+        <div style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:10px; padding:14px; max-height:380px; overflow:auto;">
+          <h4 style="margin-top:0; color:#fff; font-weight:600; font-size:16px;"><i class="fas fa-shopping-cart"></i> Carrinho</h4>
+          <div id="conv-cart"></div>
+          <p class="small" style="margin-top:10px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.1); font-size:14px;"><i class="fas fa-truck"></i> Entrega: R$ <span id="conv-taxa">0,00</span></p>
+          <p class="small" style="margin-top:6px; font-weight:700; font-size:15px;"><i class="fas fa-money-bill-wave"></i> TOTAL: R$ <span id="conv-valor">0,00</span></p>
+        </div>
+      </div>
+      <!-- Input para enviar mensagem como admin -->
+      <div style="margin-top:15px; display:flex; gap:10px; align-items:flex-end;">
+        <textarea id="conv-input" placeholder="Digite uma mensagem..." style="flex:1;padding:10px;border-radius:10px;background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.2);height:56px;resize:none"></textarea>
+        <button id="conv-send" class="btn btn-success">
+          <i class="fas fa-paper-plane"></i>
+        </button>
+      </div>
+      <!-- Admin quick actions -->
+      <div style="margin-top:12px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+        <button id="conv-reset" class="btn" style="background:linear-gradient(135deg,#8b5cf6,#7c3aed);" title="Resetar">
+          <i class="fas fa-sync"></i>
+        </button>
+        <button id="conv-clear" class="btn btn-danger" title="Limpar">
+          <i class="fas fa-trash"></i>
+        </button>
+        <input id="conv-add-input" placeholder="1 x-burger, sem bacon" style="flex:1;min-width:150px;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.1);color:#fff;font-size:14px;" />
+        <button id="conv-add" class="btn btn-info" title="Adicionar">
+          <i class="fas fa-plus"></i>
+        </button>
+        <button id="conv-finalizar" class="btn btn-success" title="Finalizar">
+          <i class="fas fa-check"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Pedido Detalhe -->
+  <div id="pedido-detail-modal" class="modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(20px); align-items:center; justify-content:center; z-index:2700;">
+    <div style="background:rgba(30,30,46,0.9); backdrop-filter:blur(20px); border:1px solid rgba(138,43,226,0.5); color:#fff; width:700px; max-width:95%; border-radius:14px; padding:20px; box-shadow:0 20px 60px rgba(0,0,0,0.4);">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <h2 id="pedido-detail-title" style="margin:0; font-size:18px; font-weight:600;"><i class="fas fa-clipboard-list"></i> Detalhes do Pedido</h2>
+        <div>
+          <button id="pedido-detail-close" class="btn btn-secondary">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </div>
+      <div id="pedido-detail-body" style="margin-top:15px; max-height:480px; overflow:auto;">
+        <!-- Conteúdo preenchido dinamicamente -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Dashboard -->
+  <div id="dashboard-modal" class="modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(20px); align-items:center; justify-content:center; z-index:2800;">
+    <div style="background:rgba(30,30,46,0.9); backdrop-filter:blur(20px); border:1px solid rgba(138,43,226,0.5); color:#fff; width:480px; max-width:95%; border-radius:14px; padding:20px; box-shadow:0 20px 60px rgba(0,0,0,0.4);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+        <h2 style="margin:0;font-size:20px;font-weight:700;display:flex;align-items:center;gap:8px;color:var(--primary);"><i class="fas fa-chart-line"></i> Dashboard Financeiro</h2>
+        <button id="dashboard-close" class="btn btn-secondary">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <div style="display:grid;gap:15px;">
+        <!-- Valor Total Geral -->
+        <div style="background:rgba(255,255,255,0.05);backdrop-filter:blur(10px);border:1px solid rgba(138,43,226,0.3);padding:20px;border-radius:14px;text-align:center;box-shadow:0 5px 20px rgba(0,0,0,0.2);transition:all 0.3s ease;">
+          <div style="font-size:13px;color:rgba(255,255,255,0.8);margin-bottom:10px;font-weight:500;"><i class="fas fa-wallet"></i> VALOR TOTAL GERAL</div>
+          <div style="font-size:32px;font-weight:700;color:var(--info);">R$ <span id="dashboard-total-geral">0,00</span></div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.6);margin-top:6px;">Produtos + Entregas</div>
+        </div>
+        
+        <!-- Valor dos Produtos -->
+        <div style="background:rgba(255,255,255,0.05);backdrop-filter:blur(10px);border:1px solid rgba(138,43,226,0.3);padding:20px;border-radius:14px;text-align:center;box-shadow:0 5px 20px rgba(0,0,0,0.2);transition:all 0.3s ease;">
+          <div style="font-size:13px;color:rgba(255,255,255,0.8);margin-bottom:10px;font-weight:500;"><i class="fas fa-hamburger"></i> VALOR DOS PRODUTOS</div>
+          <div style="font-size:32px;font-weight:700;color:var(--success);">R$ <span id="dashboard-total-produtos">0,00</span></div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.6);margin-top:6px;">Apenas itens do cardápio</div>
+        </div>
+        
+        <!-- Valor das Entregas -->
+        <div style="background:rgba(255,255,255,0.05);backdrop-filter:blur(10px);border:1px solid rgba(138,43,226,0.3);padding:20px;border-radius:14px;text-align:center;box-shadow:0 5px 20px rgba(0,0,0,0.2);transition:all 0.3s ease;">
+          <div style="font-size:13px;color:rgba(255,255,255,0.8);margin-bottom:10px;font-weight:500;"><i class="fas fa-motorcycle"></i> VALOR DAS ENTREGAS</div>
+          <div style="font-size:32px;font-weight:700;color:var(--warning);">R$ <span id="dashboard-total-entregas">0,00</span></div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.6);margin-top:6px;">Taxas de entrega</div>
+        </div>
+      </div>
+      
+      <div style="margin-top:20px;text-align:center;">
+        <button id="dashboard-refresh" class="btn btn-warning" style="font-size:15px;padding:12px 24px;">
+          <i class="fas fa-sync-alt"></i> Atualizar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Cardápio Unificado -->
+  <div id="cardapio-modal" class="modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(20px); align-items:center; justify-content:center; z-index:2600;">
+    <div style="background:rgba(30,30,46,0.9); backdrop-filter:blur(20px); border:1px solid rgba(138,43,226,0.5); color:#fff; width:95%; max-width:1300px; height:92%; max-height:850px; border-radius:14px; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,0.4);">
+      <div style="background:rgba(255,255,255,0.05); padding:16px; border-bottom:1px solid rgba(138,43,226,0.3);">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <h2 style="margin:0;font-size:20px;font-weight:700;display:flex;align-items:center;gap:8px;color:var(--info);"><i class="fas fa-utensils"></i> Gerenciamento do Cardápio</h2>
+          <button id="cardapio-close" class="btn btn-secondary">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </div>
+      
+      <!-- Abas de Navegação -->
+      <div class="cardapio-tabs" style="background:rgba(255,255,255,0.05);display:flex;border-bottom:1px solid rgba(138,43,226,0.3);">
+        <button class="tab-btn active" data-tab="visualizar" style="flex:1;padding:12px;background:transparent;border:0;color:#fff;cursor:pointer;border-bottom:3px solid var(--primary);font-weight:bold;transition:all 0.3s ease;font-size:14px;">
+          <i class="fas fa-list"></i> Visualizar
+        </button>
+        <button class="tab-btn" data-tab="adicionar" style="flex:1;padding:12px;background:transparent;border:0;color:rgba(255,255,255,0.6);cursor:pointer;border-bottom:3px solid transparent;font-weight:bold;transition:all 0.3s ease;font-size:14px;">
+          <i class="fas fa-plus"></i> Adicionar
+        </button>
+        <button class="tab-btn" data-tab="mapeamentos" style="flex:1;padding:12px;background:transparent;border:0;color:rgba(255,255,255,0.6);cursor:pointer;border-bottom:3px solid transparent;font-weight:bold;transition:all 0.3s ease;font-size:14px;">
+          <i class="fas fa-link"></i> Mapeamentos
+        </button>
+        <button class="tab-btn" data-tab="configuracoes" style="flex:1;padding:12px;background:transparent;border:0;color:rgba(255,255,255,0.6);cursor:pointer;border-bottom:3px solid transparent;font-weight:bold;transition:all 0.3s ease;font-size:14px;">
+          <i class="fas fa-cog"></i> Configurações
+        </button>
+      </div>
+      
+      <div class="modal-body" style="padding:0;height:calc(100% - 120px);overflow:hidden;">
+        <!-- Aba Visualizar & Editar -->
+        <div id="tab-visualizar" class="tab-content active" style="height:100%;padding:16px;overflow-y:auto;">
+          <!-- Barra de Ferramentas -->
+          <div class="toolbar" style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
+            <div style="display:flex;gap:8px;align-items:center;">
+              <input type="text" id="buscar-item-unified" placeholder="🔍 Buscar..." style="padding:10px 14px;border:1px solid rgba(138,43,226,0.3);border-radius:10px;background:rgba(255,255,255,0.1);color:#fff;width:220px;font-size:14px;">
+              <select id="filtro-tipo-unified" style="padding:10px 14px;border:1px solid rgba(138,43,226,0.3);border-radius:10px;background:rgba(255,255,255,0.1);color:#fff;font-size:14px;">
+                <option value="">Todos</option>
+                <option value="Lanche">🍔 Lanches</option>
+                <option value="Bebida">🥤 Bebidas</option>
+                <option value="Adicional">🧀 Adicionais</option>
+                <option value="Sobremesa">🍰 Sobremesas</option>
+              </select>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button id="refresh-cardapio-unified" class="btn btn-info" title="Atualizar">
+                <i class="fas fa-sync-alt"></i>
+              </button>
+              <button id="export-cardapio" class="btn btn-success" title="Exportar">
+                <i class="fas fa-file-export"></i>
+              </button>
+              <button id="import-cardapio" class="btn btn-warning" title="Importar">
+                <i class="fas fa-file-import"></i>
+              </button>
+            </div>
+          </div>
+          
+          <!-- Lista de Itens com Edição Inline -->
+          <div id="lista-cardapio-unified" style="display:grid;gap:12px;"></div>
+        </div>
+        
+        <!-- Aba Adicionar Item -->
+        <div id="tab-adicionar" class="tab-content" style="height:100%;padding:16px;overflow-y:auto;display:none;">
+          <div style="max-width:550px;margin:0 auto;">
+            <h3 style="color:#fff;margin-bottom:16px;font-size:18px;font-weight:600;"><i class="fas fa-plus-circle"></i> Adicionar Novo Item</h3>
+            
+            <div style="display:grid;gap:12px;">
+              <div>
+                <label style="color:#fff;display:block;margin-bottom:5px;font-weight:500;font-size:14px;">Nome do Item *</label>
+                <input type="text" id="item-nome-unified" placeholder="Ex: X-Bacon Especial" style="width:100%;padding:10px 14px;border:1px solid rgba(138,43,226,0.3);border-radius:10px;background:rgba(255,255,255,0.1);color:#fff;font-size:14px;">
+              </div>
+              
+              <div>
+                <label style="color:#fff;display:block;margin-bottom:5px;font-weight:500;font-size:14px;">Descrição</label>
+                <textarea id="item-desc-unified" placeholder="Descrição detalhada..." style="width:100%;padding:10px 14px;border:1px solid rgba(138,43,226,0.3);border-radius:10px;background:rgba(255,255,255,0.1);color:#fff;height:70px;resize:vertical;font-size:14px;"></textarea>
+              </div>
+              
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+                <div>
+                  <label style="color:#fff;display:block;margin-bottom:5px;font-weight:500;font-size:14px;">Preço (R$) *</label>
+                  <input type="number" id="item-preco-unified" step="0.01" min="0" placeholder="0,00" style="width:100%;padding:10px 14px;border:1px solid rgba(138,43,226,0.3);border-radius:10px;background:rgba(255,255,255,0.1);color:#fff;font-size:14px;">
+                </div>
+                
+                <div>
+                  <label style="color:#fff;display:block;margin-bottom:5px;font-weight:500;font-size:14px;">Tipo *</label>
+                  <select id="item-tipo-unified" style="width:100%;padding:10px 14px;border:1px solid rgba(138,43,226,0.3);border-radius:10px;background:rgba(255,255,255,0.1);color:#fff;font-size:14px;">
+                    <option value="Lanche">🍔 Lanche</option>
+                    <option value="Bebida">🥤 Bebida</option>
+                    <option value="Adicional">🧀 Adicional</option>
+                    <option value="Sobremesa">🍰 Sobremesa</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label style="color:#fff;display:block;margin-bottom:5px;font-weight:500;font-size:14px;">ID</label>
+                  <input type="text" id="item-id-unified" placeholder="Auto" style="width:100%;padding:10px 14px;border:1px solid rgba(138,43,226,0.3);border-radius:10px;background:rgba(255,255,255,0.1);color:#fff;font-size:14px;">
+                </div>
+              </div>
+              
+              <div>
+                <label style="color:#fff;display:block;margin-bottom:5px;font-weight:500;font-size:14px;">Gatilhos</label>
+                <input type="text" id="item-gatilhos-unified" placeholder="x-bacon, bacon, especial" style="width:100%;padding:10px 14px;border:1px solid rgba(138,43,226,0.3);border-radius:10px;background:rgba(255,255,255,0.1);color:#fff;font-size:14px;">
+                <small style="color:rgba(255,255,255,0.6);font-size:12px;">Palavras-chave separadas por vírgula</small>
+              </div>
+              
+              <div style="display:flex;gap:8px;margin-top:16px;">
+                <button id="salvar-item-unified" class="btn btn-success" style="flex:1;padding:12px;font-weight:bold;">
+                  <i class="fas fa-save"></i> Salvar
+                </button>
+                <button id="limpar-form-unified" class="btn btn-secondary" style="padding:12px 16px;">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Aba Mapeamentos -->
+        <div id="tab-mapeamentos" class="tab-content" style="height:100%;padding:16px;overflow-y:auto;display:none;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:25px;height:100%;">
+            <!-- Lista de Mapeamentos -->
+            <div>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                <h3 style="color:#fff;margin:0;font-size:16px;font-weight:600;"><i class="fas fa-link"></i> Mapeamentos Ativos</h3>
+                <button id="refresh-mapeamentos-unified" class="btn btn-info" style="padding:6px 10px;" title="Atualizar">
+                  <i class="fas fa-sync-alt"></i>
+                </button>
+              </div>
+              <div id="lista-mapeamentos-unified" style="max-height:calc(100% - 40px);overflow-y:auto;"></div>
+            </div>
+            
+            <!-- Adicionar Mapeamento -->
+            <div>
+              <h3 style="color:#fff;margin-bottom:12px;font-size:16px;font-weight:600;"><i class="fas fa-plus-circle"></i> Adicionar Mapeamento</h3>
+              
+              <div style="display:grid;gap:12px;">
+                <div>
+                  <label style="color:#fff;display:block;margin-bottom:5px;font-weight:500;font-size:14px;">Gatilho *</label>
+                  <input type="text" id="novo-gatilho-unified" placeholder="Ex: x-bacon" style="width:100%;padding:10px 14px;border:1px solid rgba(138,43,226,0.3);border-radius:10px;background:rgba(255,255,255,0.1);color:#fff;font-size:14px;">
+                </div>
+                
+                <div>
+                  <label style="color:#fff;display:block;margin-bottom:5px;font-weight:500;font-size:14px;">ID do Item *</label>
+                  <input type="text" id="novo-item-id-unified" placeholder="Ex: 52" style="width:100%;padding:10px 14px;border:1px solid rgba(138,43,226,0.3);border-radius:10px;background:rgba(255,255,255,0.1);color:#fff;font-size:14px;">
+                </div>
+                
+                <button id="adicionar-mapeamento-unified" class="btn btn-success" style="padding:10px;font-weight:bold;">
+                  <i class="fas fa-plus"></i> Adicionar
+                </button>
+                
+                <hr style="border:1px solid rgba(255,255,255,0.2);margin:16px 0;">
+                
+                <h4 style="color:#fff;margin-bottom:8px;font-size:15px;font-weight:600;"><i class="fas fa-list"></i> Múltiplos Gatilhos</h4>
+                <div>
+                  <label style="color:#fff;display:block;margin-bottom:5px;font-weight:500;font-size:14px;">Nome do Item</label>
+                  <input type="text" id="cardapio-nome-unified" placeholder="Ex: X-Bacon" style="width:100%;padding:10px 14px;border:1px solid rgba(138,43,226,0.3);border-radius:10px;background:rgba(255,255,255,0.1);color:#fff;font-size:14px;">
+                </div>
+                
+                <div>
+                  <label style="color:#fff;display:block;margin-bottom:5px;font-weight:500;font-size:14px;">ID do Item</label>
+                  <input type="text" id="cardapio-id-unified" placeholder="Ex: 52" style="width:100%;padding:10px 14px;border:1px solid rgba(138,43,226,0.3);border-radius:10px;background:rgba(255,255,255,0.1);color:#fff;font-size:14px;">
+                </div>
+                
+                <div>
+                  <label style="color:#fff;display:block;margin-bottom:5px;font-weight:500;font-size:14px;">Gatilhos</label>
+                  <textarea id="cardapio-gatilhos-unified" placeholder="x-bacon, bacon, especial" style="width:100%;padding:10px 14px;border:1px solid rgba(138,43,226,0.3);border-radius:10px;background:rgba(255,255,255,0.1);color:#fff;height:70px;resize:vertical;font-size:14px;"></textarea>
+                </div>
+                
+                <button id="adicionar-multiplos-gatilhos-unified" class="btn btn-warning" style="padding:10px;font-weight:bold;">
+                  <i class="fas fa-link"></i> Adicionar Múltiplos
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Aba Configurações -->
+        <div id="tab-configuracoes" class="tab-content" style="height:100%;padding:16px;overflow-y:auto;display:none;">
+          <div style="max-width:750px;margin:0 auto;">
+            <h3 style="color:#fff;margin-bottom:16px;font-size:18px;font-weight:600;"><i class="fas fa-cog"></i> Configurações do Sistema</h3>
+            
+            <div style="display:grid;gap:16px;">
+              <div style="background:rgba(255,255,255,0.05);backdrop-filter:blur(10px);border:1px solid rgba(138,43,226,0.2);padding:16px;border-radius:12px;">
+                <h4 style="color:#fff;margin-bottom:12px;font-size:15px;font-weight:600;"><i class="fas fa-save"></i> Backup & Restauração</h4>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                  <button id="backup-cardapio" class="btn btn-success">
+                    <i class="fas fa-file-export"></i> Backup
+                  </button>
+                  <button id="restore-cardapio" class="btn btn-warning">
+                    <i class="fas fa-file-import"></i> Restaurar
+                  </button>
+                  <button id="reset-cardapio" class="btn btn-danger">
+                    <i class="fas fa-trash"></i> Resetar
+                  </button>
+                </div>
+              </div>
+              
+              <div style="background:rgba(255,255,255,0.05);backdrop-filter:blur(10px);border:1px solid rgba(138,43,226,0.2);padding:16px;border-radius:12px;">
+                <h4 style="color:#fff;margin-bottom:12px;font-size:15px;font-weight:600;"><i class="fas fa-sync"></i> Sincronização</h4>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                  <button id="sync-servidor" class="btn btn-info">
+                    <i class="fas fa-sync-alt"></i> Sincronizar
+                  </button>
+                  <button id="force-reload" class="btn" style="background:linear-gradient(135deg,#8b5cf6,#7c3aed);">
+                    <i class="fas fa-bolt"></i> Recarregar
+                  </button>
+                </div>
+              </div>
+              
+              <div style="background:rgba(255,255,255,0.05);backdrop-filter:blur(10px);border:1px solid rgba(138,43,226,0.2);padding:16px;border-radius:12px;">
+                <h4 style="color:#fff;margin-bottom:12px;font-size:15px;font-weight:600;"><i class="fas fa-chart-bar"></i> Estatísticas</h4>
+                <div id="cardapio-stats" style="color:rgba(255,255,255,0.6);font-size:14px;">Carregando estatísticas...</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Popup do QR Code -->
+  <div id="qrPopup" class="popup-overlay hidden">
+    <div class="popup-content">
+      <button class="popup-close">&times;</button>
+      <h2 style="margin-top:0;text-align:center;font-size:18px;"><i class="fas fa-qrcode"></i> Conexão WhatsApp</h2>
+      <p style="text-align:center;margin-bottom:16px;font-size:14px;">Escaneie o QR Code</p>
+      
+      <div class="qr-code-container">
+        <img id="qrCodeImage" class="qr-code" src="" alt="QR Code WhatsApp">
+      </div>
+      
+      <div id="statusIndicator" class="status-indicator status-connecting">
+        <div class="status-dot connecting"></div>
+        <span id="statusText">Carregando...</span>
+      </div>
+      
+      <div style="text-align:center;margin-top:16px;">
+        <button id="refreshQR" class="btn btn-primary">
+          <i class="fas fa-sync-alt"></i> Atualizar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/pedidos.js"></script>
+  
+  <script>
+    // Dashboard Modal
+    document.getElementById('btn-dashboard').addEventListener('click', () => {
+      document.getElementById('dashboard-modal').style.display = 'flex';
+      loadDashboardData();
+    });
+
+    document.getElementById('dashboard-close').addEventListener('click', () => {
+      document.getElementById('dashboard-modal').style.display = 'none';
+    });
+
+    document.getElementById('dashboard-refresh').addEventListener('click', () => {
+      loadDashboardData();
+    });
+
+    // Botão Painel de Mensagens
+    document.getElementById('btn-mensagens').addEventListener('click', () => {
+      window.open('/painel-mensagens.html', '_blank');
+    });
+
+    // Função para carregar dados do dashboard
+    async function loadDashboardData() {
+      try {
+        const response = await fetch('/api/pedidos/totais-dia');
+        const data = await response.json();
+        
+        const totalProdutos = parseFloat(data.totalProdutos) || 0;
+        const totalEntregas = parseFloat(data.totalEntregas) || 0;
+        const totalGeral = totalProdutos + totalEntregas;
+        
+        document.getElementById('dashboard-total-geral').textContent = totalGeral.toFixed(2).replace('.', ',');
+        document.getElementById('dashboard-total-produtos').textContent = totalProdutos.toFixed(2).replace('.', ',');
+        document.getElementById('dashboard-total-entregas').textContent = totalEntregas.toFixed(2).replace('.', ',');
+      } catch (error) {
+        console.error('Erro ao carregar dados do dashboard:', error);
+        alert('Erro ao carregar dados do dashboard');
+      }
+    }
+
+    // Função para verificar se o dashboard está aberto e atualizar automaticamente
+    function updateDashboardIfOpen() {
+      const dashboardModal = document.getElementById('dashboard-modal');
+      if (dashboardModal && dashboardModal.style.display === 'flex') {
+        loadDashboardData();
+      }
+    }
+
+    // Atualização periódica do dashboard quando estiver aberto (a cada 10 segundos)
+    setInterval(() => {
+      updateDashboardIfOpen();
+    }, 10000);
+    
+    // Funções para o popup do QR Code
+    let statusCheckInterval;
+    
+    // Elementos do DOM
+    const btnQRWhatsApp = document.getElementById('btn-qr-whatsapp');
+    const qrPopup = document.getElementById('qrPopup');
+    const popupClose = document.querySelector('.popup-close');
+    const qrCodeImage = document.getElementById('qrCodeImage');
+    const statusIndicator = document.getElementById('statusIndicator');
+    const statusText = document.getElementById('statusText');
+    const refreshQR = document.getElementById('refreshQR');
+    
+    // Funções para o popup do QR Code
+    function openQRPopup() {
+      qrPopup.classList.remove('hidden');
+      loadQRCode();
+      startStatusCheck();
+    }
+    
+    function closeQRPopup() {
+      qrPopup.classList.add('hidden');
+      stopStatusCheck();
+    }
+    
+    async function loadQRCode() {
+      try {
+        const response = await fetch('/api/whatsapp/qrcode');
+        const data = await response.json();
+        
+        if (data.ok && data.qrcode) {
+          qrCodeImage.src = `data:image/png;base64,${data.qrcode}`;
+          updateStatus('connecting', 'Escaneie o QR Code');
+        } else {
+          // Se não há QR Code, verificar status
+          checkConnectionStatus();
+        }
+      } catch (error) {
+        console.error('Erro ao carregar QR Code:', error);
+        updateStatus('error', 'Erro ao carregar QR Code');
+      }
+    }
+    
+    async function checkConnectionStatus() {
+      try {
+        const response = await fetch('/api/whatsapp/status');
+        const data = await response.json();
+        
+        if (data.ok && data.status) {
+          if (data.status.connected) {
+            updateStatus('connected', 'WhatsApp Conectado!');
+          } else if (data.status.hasQR) {
+            updateStatus('connecting', 'QR Code disponível - Escaneie');
+          } else if (data.status.needsQR) {
+            updateStatus('connecting', 'Gerando QR Code...');
+            // Tentar carregar novamente
+            loadQRCode();
+          } else {
+            updateStatus('connecting', 'Aguardando conexão...');
+          }
+        } else {
+          updateStatus('error', 'Erro ao verificar status');
+        }
+      } catch (error) {
+        console.error('Erro ao verificar status:', error);
+        updateStatus('error', 'Erro na verificação');
+      }
+    }
+    
+    function updateStatus(type, message) {
+      statusIndicator.className = `status-indicator status-${type}`;
+      statusText.textContent = message;
+      
+      // Atualizar a animação do ponto de status
+      const statusDot = statusIndicator.querySelector('.status-dot');
+      if (type === 'connecting') {
+        statusDot.className = 'status-dot connecting';
+      } else {
+        statusDot.className = 'status-dot';
+      }
+    }
+    
+    function startStatusCheck() {
+      // Verificar status a cada 3 segundos
+      statusCheckInterval = setInterval(checkConnectionStatus, 3000);
+    }
+    
+    function stopStatusCheck() {
+      if (statusCheckInterval) {
+        clearInterval(statusCheckInterval);
+        statusCheckInterval = null;
+      }
+    }
+    
+    function refreshQRCode() {
+      refreshQR.disabled = true;
+      refreshQR.innerHTML = '<i class="fas fa-sync fa-spin"></i>';
+      
+      loadQRCode().finally(() => {
+        setTimeout(() => {
+          refreshQR.disabled = false;
+          refreshQR.innerHTML = '<i class="fas fa-sync-alt"></i> Atualizar';
+        }, 1000);
+      });
+    }
+    
+    // Event listeners
+    btnQRWhatsApp.addEventListener('click', openQRPopup);
+    popupClose.addEventListener('click', closeQRPopup);
+    refreshQR.addEventListener('click', refreshQRCode);
+    
+    // Fechar popup ao clicar fora do conteúdo
+    qrPopup.addEventListener('click', (e) => {
+      if (e.target === qrPopup) {
+        closeQRPopup();
+      }
+    });
+    
+    // Fechar popup com a tecla ESC
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !qrPopup.classList.contains('hidden')) {
+        closeQRPopup();
+      }
+    });
+    
+    // Adicionar evento para o botão de novo pedido
+    document.getElementById('btn-novo-pedido').addEventListener('click', () => {
+      alert('Função de novo pedido será implementada');
+    });
+  </script>
+</body>
+</html>
